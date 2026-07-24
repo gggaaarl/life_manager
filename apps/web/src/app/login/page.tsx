@@ -9,7 +9,9 @@ export default async function LoginPage({ searchParams }: Props) {
   const errorMessage =
     params.error === "auth"
       ? "No se pudo completar el inicio de sesión. Intenta de nuevo."
-      : undefined;
+      : params.error === "config"
+        ? "Faltan variables de Supabase en Vercel. Revisa NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        : undefined;
 
   return (
     <main className="grid min-h-dvh lg:grid-cols-[1.15fr_1fr]">
