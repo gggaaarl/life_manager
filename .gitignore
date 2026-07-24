@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+.DS_Store
+dist/
+.turbo/
+.next/
+apps/web/.next/
+apps/web/.env.local
+supabase/.branches
+supabase/.temp
+.vercel

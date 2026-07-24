@@ -1,0 +1,36 @@
+{
+  "name": "life_manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev:web": "npm run dev --prefix apps/web",
+    "build:web": "npm run build --prefix apps/web",
+    "db:login": "npx supabase login",
+    "db:link": "npx supabase link",
+    "db:push": "npx supabase db push",
+    "db:pull": "npx supabase db pull",
+    "db:types": "npx supabase gen types typescript --linked > packages/shared/src/database.types.ts",
+    "db:start": "npx supabase start",
+    "db:stop": "npx supabase stop",
+    "db:reset": "npx supabase db reset"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gggaaarl/life_manager.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/gggaaarl/life_manager/issues"
+  },
+  "homepage": "https://github.com/gggaaarl/life_manager#readme",
+  "devDependencies": {
+    "supabase": "^2.109.1"
+  }
+}
