@@ -43,10 +43,14 @@ life_manager/
 
 ## Módulos de producto (roadmap de dominio)
 
-| Módulo | Estado doc |
+| Módulo | Estado |
 |---|---|
-| Auth (Google) | Documentado |
-| Jobs (unlock / asignación) | Documentado |
-| Job PLAYER (citas + comentarios) | Documentado |
-| Job DRIVER | Pendiente de detalle |
-| Agenda / gastos / ingresos / supply chain | Pendiente |
+| Auth (Google) web | ✅ Funcionando + documentado |
+| Jobs TRAINEE / DRIVER / PLAYER | ✅ Tablas en DB + documentado |
+| Job PLAYER (citas + comentarios) | ✅ Tablas + documentado; UI pendiente |
+| Job DRIVER / TRAINEE (detalle) | Pendiente |
+| Deploy Vercel | ✅ OK |
+| App móvil | Pendiente |
+| Agenda / nutrición / finanzas / etc. | Pendiente |
+
+Historia completa: [historial-setup.md](./historial-setup.md).

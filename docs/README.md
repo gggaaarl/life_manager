@@ -2,24 +2,40 @@
 
 Aplicación tipo juego de vida: el usuario desbloquea **JOBS**, registra actividad por job y sincroniza datos desde **web** y **app móvil**, con login **Google**.
 
+**Estado (2026-07-24):** login Google funcionando · web en Vercel · DB con profiles + jobs + citas PLAYER.
+
+## Empieza aquí
+
+1. **[Historial del setup](./historial-setup.md)** — todo lo hecho, errores y cómo se arreglaron  
+2. **[Deploy + Google](./deploy-vercel-google.md)** — URLs y OAuth local/prod  
+3. **[Jobs](./jobs.md)** — TRAINEE / DRIVER / PLAYER  
+
 ## Índice
 
 | Documento | Contenido |
 |---|---|
+| [Historial del setup](./historial-setup.md) | Del cero al login OK (maestro) |
 | [Arquitectura](./arquitectura.md) | Monorepo, clientes, backend, auth |
-| [Jobs](./jobs.md) | Sistema de jobs, desbloqueo, DRIVER / PLAYER |
-| [Job PLAYER — Citas](./job-player-citas.md) | Modelo de citas, categorías, puntajes, comentarios |
-| [Esquema de base de datos](./esquema-db.md) | Tablas, enums, relaciones (Postgres / Supabase) |
-| [Setup Supabase](./supabase-setup.md) | CLI, link, migraciones, Google Auth |
-| [Auth Google](./auth-google.md) | Flujo de autenticación web + móvil |
-| [Deploy Vercel + Google](./deploy-vercel-google.md) | OAuth, env vars, publish web |
+| [Jobs](./jobs.md) | TRAINEE / DRIVER / PLAYER + `user_jobs` |
+| [Job PLAYER — Citas](./job-player-citas.md) | Citas, categorías, puntajes, comentarios |
+| [Esquema de base de datos](./esquema-db.md) | Tablas, enums, relaciones |
+| [Setup Supabase](./supabase-setup.md) | CLI, link, migraciones |
+| [Auth Google](./auth-google.md) | Flujo web (+ móvil pendiente) |
+| [Deploy Vercel + Google](./deploy-vercel-google.md) | OAuth, env vars, publish |
 
 ## Decisiones actuales
 
-- **Monorepo**: web + mobile + packages compartidos.
-- **Backend / DB**: Supabase (Postgres + Auth + Realtime).
-- **Auth**: Google OAuth (Supabase Auth).
-- **Jobs iniciales**: `DRIVER`, `PLAYER`.
-- Un usuario puede tener **varios jobs** a la vez.
-- En PLAYER, `codigo_identificador` identifica a la **persona**; cada **cita** es un evento distinto; los **comentarios** pertenecen a una cita concreta.
-- Setup DB: ver [supabase-setup.md](./supabase-setup.md).
+- **Monorepo**: `apps/web` (+ mobile luego) + `packages/shared`.
+- **DB**: Supabase Postgres — proyecto `edbgqpebcfpytyqwaaqd`.
+- **Auth**: Google OAuth (Supabase). Local OK.
+- **Jobs**: `TRAINEE` (1), `DRIVER` (2), `PLAYER` (3) en `jobs` + `user_jobs`.
+- **Web prod**: https://life-manager-tau.vercel.app  
+- PLAYER: `codigo_identificador` = persona; comentarios por **cita**.
+
+## URLs útiles
+
+| Qué | URL |
+|---|---|
+| Web producción | https://life-manager-tau.vercel.app |
+| Supabase dashboard | https://supabase.com/dashboard/project/edbgqpebcfpytyqwaaqd |
+| GitHub | https://github.com/gggaaarl/life_manager |

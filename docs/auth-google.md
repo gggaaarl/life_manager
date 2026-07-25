@@ -5,6 +5,9 @@
 Los usuarios entran a la **web** o a la **app móvil** con la misma cuenta Google.  
 Una identidad → mismos jobs, citas y datos en ambos clientes.
 
+**Estado:** login Google en web **funcionando** (local verificado).  
+Config detalle + historial: [deploy-vercel-google.md](./deploy-vercel-google.md), [historial-setup.md](./historial-setup.md).
+
 ## Proveedor
 
 - **Supabase Auth** + provider **Google OAuth**.

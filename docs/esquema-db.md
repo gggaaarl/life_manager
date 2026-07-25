@@ -318,7 +318,14 @@ group by c.id
 order by c.fecha desc;
 ```
 
-## Pendiente (no PLAYER)
+## Jobs (aplicado)
 
-- Tablas del job `DRIVER`
-- Agenda, gastos diarios, ingresos, cadena de suministro
+Ver migración `20260725000101_jobs_user_jobs_trainee_driver_player.sql` y [jobs.md](./jobs.md).
+
+- `jobs` + `user_jobs` en producción
+- Códigos: `TRAINEE`, `DRIVER`, `PLAYER`
+
+## Pendiente (dominio)
+
+- Detalle funcional del job `DRIVER` / `TRAINEE`
+- Agenda, gastos diarios, ingresos, cadena de suministro / nutrición

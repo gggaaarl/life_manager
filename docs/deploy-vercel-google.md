@@ -7,23 +7,30 @@ La web vive en `apps/web` (Next.js). Auth = **Supabase + Google OAuth**. Deploy 
 1. Ve a [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → **Credentials**
 2. **Create Credentials** → **OAuth client ID** → tipo **Web application**
 3. Nombre: `Life Manager Web`
-4. **Authorized JavaScript origins**
+4. **Authorized JavaScript origins** (puedes tener varios; local + Vercel):
    - `http://localhost:3000`
-   - `https://TU-DOMINIO.vercel.app` (cuando exista)
-5. **Authorized redirect URIs** (importante: el callback de Supabase, no el de Next):
+   - `https://life-manager-tau.vercel.app`
+5. **Authorized redirect URIs** — **solo el de Supabase** (no cambia con Vercel):
    - `https://edbgqpebcfpytyqwaaqd.supabase.co/auth/v1/callback`
 6. Copia **Client ID** y **Client Secret**
+
+> Google no redirige a tu app Next: redirige a Supabase.  
+> Tu app recibe el `code` en `/auth/callback` (local o Vercel).
 
 ## 2. Supabase → activar Google
 
 1. Dashboard → **Authentication** → **Providers** → **Google** → Enable
 2. Pega Client ID + Client Secret
 3. **Authentication** → **URL Configuration**
-   - Site URL (dev): `http://localhost:3000`
-   - Site URL (prod): `https://TU-DOMINIO.vercel.app`
-   - Redirect URLs (agrega ambas):
+   - **Site URL** (principal): `https://life-manager-tau.vercel.app` en prod  
+     (en desarrollo diario puedes dejar `http://localhost:3000`)
+   - **Redirect URLs** (lista — agrega todas las que uses):
      - `http://localhost:3000/auth/callback`
-     - `https://TU-DOMINIO.vercel.app/auth/callback`
+     - `https://life-manager-tau.vercel.app/auth/callback`
+     - (opcional) `http://localhost:3000/**` si tu panel lo permite
+
+> Si el `code` cae en `http://localhost:3000/?code=...` y no en `/auth/callback`,  
+> falta esa Redirect URL en Supabase. La app también reenvía `/?code=` → `/auth/callback`.
 
 ## 3. Probar en local
 
@@ -70,10 +77,14 @@ Login (web) → Google → Supabase callback
 
 ## Checklist rápido
 
-- [ ] OAuth Client Google creado
-- [ ] Redirect URI de Supabase en Google
-- [ ] Provider Google ON en Supabase
-- [ ] Redirect URLs localhost + Vercel en Supabase
-- [ ] Env vars en Vercel
-- [ ] Root Directory = `apps/web`
-- [ ] Login con Google funciona en local y en prod
+- [x] OAuth Client Google creado
+- [x] Redirect URI de Supabase en Google
+- [x] Provider Google ON en Supabase
+- [x] Redirect URLs localhost + Vercel en Supabase
+- [x] Orígenes JS: localhost + `life-manager-tau.vercel.app`
+- [x] Env vars en Vercel (URL + ANON KEY)
+- [x] Root Directory = `apps/web` + Framework Next.js
+- [x] Login con Google funciona en local
+- [ ] Confirmar login Google también en URL de producción Vercel
+
+Historia completa: [historial-setup.md](./historial-setup.md).
