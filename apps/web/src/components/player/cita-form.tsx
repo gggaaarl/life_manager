@@ -167,13 +167,15 @@ export function CitaForm() {
           <div>
             <p className="mb-3 text-sm font-medium text-ink">Puntajes (1–100)</p>
             <div className="grid gap-3 sm:grid-cols-5">
-              {[
-                ["puntaje_tightening", "Tightening", 90],
-                ["puntaje_bottom", "Bottom", 90],
-                ["puntaje_top", "Top", 90],
-                ["puntaje_belleza", "Belleza", 90],
-                ["puntaje_paciencia", "Paciencia", 90],
-              ].map(([name, label, defaultValue]) => (
+              {(
+                [
+                  ["puntaje_tightening", "Tightening", 90],
+                  ["puntaje_bottom", "Bottom", 90],
+                  ["puntaje_top", "Top", 90],
+                  ["puntaje_belleza", "Belleza", 90],
+                  ["puntaje_paciencia", "Paciencia", 90],
+                ] as const
+              ).map(([name, label, defaultValue]) => (
                 <label key={name} className="block text-sm">
                   <span className="mb-1 block text-muted">{label}</span>
                   <input
