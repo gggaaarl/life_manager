@@ -1,6 +1,7 @@
 import { CitaForm } from "@/components/player/cita-form";
 import { CitasTable, type CitaRow } from "@/components/player/citas-table";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { SessionInfo } from "@/components/auth/session-info";
 import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -21,36 +22,48 @@ export default async function PlayerCitasPage() {
     redirect("/home");
   }
 
-  const { data: citasRaw } = await supabase
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const { data: citasRaw, error: citasError } = await supabase
     .from("player_citas")
     .select(
-      `
-      id,
-      fecha,
-      persona,
-      caracteristica,
-      color,
-      talla,
-      figura,
-      lugar,
-      puntaje_promedio,
-      player_citas_comentarios (
-        id,
-        contenido,
-        tipo,
-        orden
-      )
-    `,
+      "id, fecha, persona, caracteristica, color, talla, figura, lugar, puntaje_promedio",
     )
     .eq("user_id", user.id)
     .order("fecha", { ascending: false });
 
+  const citaIds = citasRaw?.map((cita) => cita.id) ?? [];
+
+  const { data: comentariosRaw, error: comentariosError } =
+    citaIds.length > 0
+      ? await supabase
+          .from("player_citas_comentarios")
+          .select("id, cita_id, contenido, tipo, orden")
+          .in("cita_id", citaIds)
+          .order("orden", { ascending: true })
+      : { data: [], error: null };
+
+  const comentariosByCita = new Map<string, CitaRow["comentarios"]>();
+  for (const comentario of comentariosRaw ?? []) {
+    const list = comentariosByCita.get(comentario.cita_id) ?? [];
+    list.push({
+      id: comentario.id,
+      contenido: comentario.contenido,
+      tipo: comentario.tipo,
+    });
+    comentariosByCita.set(comentario.cita_id, list);
+  }
+
   const citas: CitaRow[] = (citasRaw ?? []).map((cita) => ({
     ...cita,
-    comentarios: [...(cita.player_citas_comentarios ?? [])].sort(
-      (a, b) => (a.orden ?? 0) - (b.orden ?? 0),
-    ),
+    comentarios: comentariosByCita.get(cita.id) ?? [],
   }));
+
+  const queryError = citasError?.message ?? comentariosError?.message ?? null;
 
   return (
     <main className="min-h-dvh bg-sand px-6 py-10">
@@ -76,6 +89,26 @@ export default async function PlayerCitasPage() {
           </div>
           <SignOutButton />
         </header>
+
+        <div className="mb-6 space-y-4">
+          <SessionInfo
+            userId={user.id}
+            email={profileRow?.email ?? user.email}
+            role={profile.role}
+            experimentalProfiles={profile.experimental_profiles}
+          />
+
+          {queryError ? (
+            <div className="rounded-2xl border border-[var(--lm-danger)]/30 bg-white p-4 text-sm text-[var(--lm-danger)]">
+              <p className="font-semibold">Error al leer citas desde Supabase</p>
+              <p className="mt-1 break-all font-mono text-xs">{queryError}</p>
+              <p className="mt-2 text-sm text-muted">
+                Si el UUID de arriba coincide con `profiles.id` y aún falla, en Supabase Dashboard
+                ve a Settings → API → Reload schema.
+              </p>
+            </div>
+          ) : null}
+        </div>
 
         <div className="space-y-6">
           <CitaForm />

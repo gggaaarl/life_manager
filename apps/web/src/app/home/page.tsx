@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { SessionInfo } from "@/components/auth/session-info";
 import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
 import Link from "next/link";
 
@@ -16,7 +17,7 @@ export default async function HomePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, email, avatar_url")
+    .select("display_name, email, avatar_url, role, experimental_profiles")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -47,7 +48,14 @@ export default async function HomePage() {
           <SignOutButton />
         </header>
 
-        <section className="mt-10 grid gap-4 sm:grid-cols-2">
+        <SessionInfo
+          userId={user.id}
+          email={profile?.email ?? user.email}
+          role={accessProfile.role}
+          experimentalProfiles={accessProfile.experimental_profiles}
+        />
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
             <p className="text-sm text-muted">Job activo</p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold">
