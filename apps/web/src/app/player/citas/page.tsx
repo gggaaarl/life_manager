@@ -92,17 +92,12 @@ export default async function PlayerCitasPage() {
             <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-ink">
               Citas
             </h1>
-            <p className="mt-2 max-w-2xl text-muted">
-              Tabla suave para ver y llenar historial. Persona con comillas simples, dichos con
-              comillas dobles, pensamientos entre paréntesis.
-            </p>
           </div>
           <SignOutButton />
         </header>
 
         <div className="mb-6 space-y-4">
           <SessionInfo
-            userId={user.id}
             email={profileRow?.email ?? user.email}
             role={profile.role}
             experimentalProfiles={profile.experimental_profiles}
@@ -112,10 +107,6 @@ export default async function PlayerCitasPage() {
             <div className="rounded-2xl border border-[var(--lm-danger)]/30 bg-white p-4 text-sm text-[var(--lm-danger)]">
               <p className="font-semibold">Error al leer citas desde Supabase</p>
               <p className="mt-1 break-all font-mono text-xs">{queryError}</p>
-              <p className="mt-2 text-sm text-muted">
-                Si el UUID de arriba coincide con `profiles.id` y aún falla, en Supabase Dashboard
-                ve a Settings → API → Reload schema.
-              </p>
             </div>
           ) : null}
         </div>

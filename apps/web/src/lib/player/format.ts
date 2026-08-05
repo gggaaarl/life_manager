@@ -1,5 +1,3 @@
-import type { ComentarioTipo } from "./constants";
-
 export function slugifyPersona(persona: string): string {
   return persona
     .normalize("NFD")
@@ -11,14 +9,11 @@ export function slugifyPersona(persona: string): string {
 }
 
 export function formatPersona(persona: string): string {
-  return `'${persona}'`;
+  return persona;
 }
 
-export function formatComentario(contenido: string, tipo: ComentarioTipo): string {
-  if (tipo === "pensamiento") {
-    return `(${contenido})`;
-  }
-  return `"${contenido}"`;
+export function formatComentario(contenido: string): string {
+  return contenido;
 }
 
 export function formatFechaCorta(fecha: string): string {

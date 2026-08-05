@@ -4,8 +4,6 @@ import { useState, useTransition } from "react";
 import { createCita } from "@/app/player/citas/actions";
 import {
   COLOR_LABELS,
-  COMENTARIO_TIPO_LABELS,
-  COMENTARIO_TIPOS,
   FIGURA_LABELS,
   PLAYER_COLORS,
   PLAYER_FIGURAS,
@@ -13,6 +11,7 @@ import {
   TALLA_LABELS,
   type ComentarioTipo,
 } from "@/lib/player/constants";
+import { ComentarioTipoPicker } from "@/components/player/comentario-tipo-badge";
 
 type ComentarioDraft = {
   id: string;
@@ -65,9 +64,6 @@ export function CitaForm() {
         <div>
           <p className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
             Nueva cita
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            Persona con &apos; &apos;, dichos con &quot; &quot;, pensamientos con ( ) y badge.
           </p>
         </div>
         <button
@@ -209,28 +205,11 @@ export function CitaForm() {
                 key={comentario.id}
                 className="rounded-xl border border-line bg-sand/30 p-4"
               >
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  {COMENTARIO_TIPOS.map((tipo) => (
-                    <button
-                      key={tipo}
-                      type="button"
-                      onClick={() => updateComentario(comentario.id, { tipo })}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                        comentario.tipo === tipo
-                          ? tipo === "pensamiento"
-                            ? "bg-forest text-white"
-                            : "bg-teal text-white"
-                          : "border border-line bg-white text-muted"
-                      }`}
-                    >
-                      {COMENTARIO_TIPO_LABELS[tipo]}
-                    </button>
-                  ))}
-                  {comentario.tipo === "pensamiento" ? (
-                    <span className="rounded-full bg-forest/10 px-2 py-0.5 text-xs font-medium text-forest">
-                      ( ) interno
-                    </span>
-                  ) : null}
+                <div className="mb-3">
+                  <ComentarioTipoPicker
+                    value={comentario.tipo}
+                    onChange={(tipo) => updateComentario(comentario.id, { tipo })}
+                  />
                 </div>
                 <textarea
                   rows={2}

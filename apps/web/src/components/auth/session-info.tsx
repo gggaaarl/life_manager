@@ -1,26 +1,22 @@
 type SessionInfoProps = {
-  userId: string;
   email?: string | null;
   role?: string | null;
   experimentalProfiles?: string[] | null;
 };
 
-export function SessionInfo({
-  userId,
-  email,
-  role,
-  experimentalProfiles,
-}: SessionInfoProps) {
+export function SessionInfo({ email, role, experimentalProfiles }: SessionInfoProps) {
+  const hasDetails = email || role || (experimentalProfiles && experimentalProfiles.length > 0);
+
+  if (!hasDetails) {
+    return null;
+  }
+
   return (
     <div className="rounded-2xl border border-line bg-white p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
         Tu sesión
       </p>
       <dl className="mt-3 space-y-2 text-sm">
-        <div>
-          <dt className="text-muted">Código de usuario</dt>
-          <dd className="mt-0.5 break-all font-mono text-xs text-ink">{userId}</dd>
-        </div>
         {email ? (
           <div>
             <dt className="text-muted">Email</dt>

@@ -6,14 +6,21 @@ Aplicación tipo juego de vida: el usuario desbloquea **JOBS**, registra activid
 
 ## Empieza aquí
 
-1. **[Historial del setup](./historial-setup.md)** — todo lo hecho, errores y cómo se arreglaron  
-2. **[Deploy + Google](./deploy-vercel-google.md)** — URLs y OAuth local/prod  
-3. **[Jobs](./jobs.md)** — TRAINEE / DRIVER / PLAYER  
+1. **[Guía de estudio](./estudio/README.md)** — arquitectura, despliegue, datos, diseño (leer desde celular)
+2. **[Historial del setup](./historial-setup.md)** — todo lo hecho, errores y cómo se arreglaron  
+3. **[Deploy + Google](./deploy-vercel-google.md)** — URLs y OAuth local/prod  
+4. **[Jobs](./jobs.md)** — TRAINEE / DRIVER / PLAYER  
 
 ## Índice
 
 | Documento | Contenido |
 |---|---|
+| **[Estudio — índice](./estudio/README.md)** | **Arquitectura, código, deploy, datos, diseño** |
+| [Estudio — arquitectura](./estudio/arquitectura.md) | Capas, flujos, Server vs Client |
+| [Estudio — mapa código PLAYER](./estudio/mapa-codigo-player.md) | Archivo por archivo |
+| [Estudio — despliegue](./estudio/despliegue.md) | Git, Vercel, Supabase |
+| [Estudio — diccionario datos](./estudio/diccionario-datos.md) | Tablas y enums |
+| [Estudio — manual diseño](./estudio/manual-diseno.md) | CSS, Tailwind, badges |
 | [Historial del setup](./historial-setup.md) | Del cero al login OK (maestro) |
 | [Arquitectura](./arquitectura.md) | Monorepo, clientes, backend, auth |
 | [Jobs](./jobs.md) | TRAINEE / DRIVER / PLAYER + `user_jobs` |

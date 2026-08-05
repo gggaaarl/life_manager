@@ -30,5 +30,5 @@ export const FIGURA_LABELS: Record<PlayerFigura, string> = {
 
 export const COMENTARIO_TIPO_LABELS: Record<ComentarioTipo, string> = {
   dicho: "Dicho",
-  pensamiento: "Pensamiento",
+  pensamiento: "Personal",
 };

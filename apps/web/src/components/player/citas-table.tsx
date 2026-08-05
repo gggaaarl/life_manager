@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
+import { ComentarioTipoBadge } from "@/components/player/comentario-tipo-badge";
 import {
   COLOR_LABELS,
-  COMENTARIO_TIPO_LABELS,
   FIGURA_LABELS,
   TALLA_LABELS,
   type ComentarioTipo,
@@ -82,14 +82,8 @@ export function CitasTable({ citas }: { citas: CitaRow[] }) {
                   <div className="space-y-2">
                     {cita.comentarios.map((comentario) => (
                       <div key={comentario.id} className="flex flex-wrap items-start gap-2">
-                        {comentario.tipo === "pensamiento" ? (
-                          <span className="rounded-full bg-forest/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-forest">
-                            {COMENTARIO_TIPO_LABELS[comentario.tipo]}
-                          </span>
-                        ) : null}
-                        <span className="text-ink">
-                          {formatComentario(comentario.contenido, comentario.tipo)}
-                        </span>
+                        <ComentarioTipoBadge tipo={comentario.tipo} />
+                        <span className="text-ink">{formatComentario(comentario.contenido)}</span>
                       </div>
                     ))}
                   </div>

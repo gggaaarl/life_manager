@@ -57,7 +57,6 @@ export default async function HomePage() {
         </header>
 
         <SessionInfo
-          userId={user.id}
           email={profile?.email ?? user.email}
           role={accessProfile.role}
           experimentalProfiles={accessProfile.experimental_profiles}
