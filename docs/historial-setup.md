@@ -162,8 +162,10 @@ Usuario → Continuar con Google
 - [x] Deploy Vercel Next.js OK  
 - [x] Env vars Vercel completas  
 - [x] Documentación de dominio / setup / historial  
-- [ ] UI hub de jobs en `/home`  
-- [ ] CRUD PLAYER (citas) en web  
+- [x] Header web (desktop + hamburguesa) con cerrar sesión  
+- [x] PLAYER: vista Salidas + columna presión + edición con lápiz  
+- [ ] UI hub de jobs más completa  
+- [ ] CRUD PLAYER restante (filtros / detalle)  
 - [ ] App móvil Expo  
 - [ ] Nutrición / rutinas / rehab / psicología / finanzas  
 

@@ -1,9 +1,9 @@
 import { CitaForm } from "@/components/player/cita-form";
 import { CitasTable, type CitaRow } from "@/components/player/citas-table";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import { SessionInfo } from "@/components/auth/session-info";
+import { AppHeader } from "@/components/layout/app-header";
 import { CitasDebugLog } from "@/components/debug/console-log";
 import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
+import type { PlayerPresion } from "@/lib/player/constants";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -23,16 +23,10 @@ export default async function PlayerCitasPage() {
     redirect("/home");
   }
 
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", user.id)
-    .maybeSingle();
-
   const { data: citasRaw, error: citasError } = await supabase
     .from("player_citas")
     .select(
-      "id, fecha, persona, caracteristica, color, talla, figura, lugar, puntaje_promedio",
+      "id, fecha, persona, caracteristica, color, talla, figura, presion, lugar, puntaje_promedio, puntaje_tightening, puntaje_bottom, puntaje_top, puntaje_belleza, puntaje_paciencia",
     )
     .eq("user_id", user.id)
     .order("fecha", { ascending: false });
@@ -61,6 +55,7 @@ export default async function PlayerCitasPage() {
 
   const citas: CitaRow[] = (citasRaw ?? []).map((cita) => ({
     ...cita,
+    presion: (cita.presion ?? "regular") as PlayerPresion,
     comentarios: comentariosByCita.get(cita.id) ?? [],
   }));
 
@@ -75,41 +70,32 @@ export default async function PlayerCitasPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-sand px-6 py-10">
+    <main className="min-h-dvh bg-sand">
+      <AppHeader showPlayerMenu />
       <CitasDebugLog userId={user.id} citasCount={citas.length} queryError={queryError} />
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <Link
-              href="/home"
-              className="text-sm font-medium text-teal transition hover:opacity-80"
-            >
-              ← Volver al hub
-            </Link>
-            <p className="mt-3 font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
-              PLAYER
-            </p>
-            <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-ink">
-              Citas
-            </h1>
-          </div>
-          <SignOutButton />
-        </header>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <Link
+          href="/home"
+          className="inline-flex text-sm font-medium text-teal transition hover:opacity-80"
+        >
+          ← Volver al hub
+        </Link>
 
-        <div className="mb-6 space-y-4">
-          <SessionInfo
-            email={profileRow?.email ?? user.email}
-            role={profile.role}
-            experimentalProfiles={profile.experimental_profiles}
-          />
-
-          {queryError ? (
-            <div className="rounded-2xl border border-[var(--lm-danger)]/30 bg-white p-4 text-sm text-[var(--lm-danger)]">
-              <p className="font-semibold">Error al leer citas desde Supabase</p>
-              <p className="mt-1 break-all font-mono text-xs">{queryError}</p>
-            </div>
-          ) : null}
+        <div className="mt-3 mb-6">
+          <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
+            PLAYER
+          </p>
+          <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-ink">
+            Salidas
+          </h1>
         </div>
+
+        {queryError ? (
+          <div className="mb-6 rounded-2xl border border-[var(--lm-danger)]/30 bg-white p-4 text-sm text-[var(--lm-danger)]">
+            <p className="font-semibold">Error al leer salidas desde Supabase</p>
+            <p className="mt-1 break-all font-mono text-xs">{queryError}</p>
+          </div>
+        ) : null}
 
         <div className="space-y-6">
           <CitaForm />

@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import { SessionInfo } from "@/components/auth/session-info";
+import { AppHeader } from "@/components/layout/app-header";
 import { SessionDebugLog } from "@/components/debug/console-log";
 import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
 import Link from "next/link";
@@ -32,7 +31,8 @@ export default async function HomePage() {
   const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
 
   return (
-    <main className="min-h-dvh bg-sand px-6 py-10">
+    <main className="min-h-dvh bg-sand">
+      <AppHeader showPlayerMenu={showPlayerMenu} />
       <SessionDebugLog
         page="home"
         userId={user.id}
@@ -40,29 +40,15 @@ export default async function HomePage() {
         role={accessProfile.role}
         experimentalProfiles={accessProfile.experimental_profiles}
       />
-      <div className="mx-auto max-w-3xl">
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
-              LIFE MANAGER
-            </p>
-            <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-ink">
-              Hola, {name}
-            </h1>
-            <p className="mt-2 text-muted">
-              Sesión activa con Google / Supabase. Aquí irá el hub de jobs.
-            </p>
-          </div>
-          <SignOutButton />
-        </header>
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+        <div>
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-ink">
+            Hola, {name}
+          </h1>
+          <p className="mt-2 text-muted">Hub de jobs — elige por dónde seguir.</p>
+        </div>
 
-        <SessionInfo
-          email={profile?.email ?? user.email}
-          role={accessProfile.role}
-          experimentalProfiles={accessProfile.experimental_profiles}
-        />
-
-        <section className="mt-6 grid gap-4 sm:grid-cols-2">
+        <section className="mt-8 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
             <p className="text-sm text-muted">Job activo</p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold">
@@ -70,15 +56,15 @@ export default async function HomePage() {
             </p>
             <p className="mt-2 text-sm text-muted">
               {showPlayerMenu
-                ? "Historial de citas disponible en el menú experimental."
+                ? "Historial de salidas disponible."
                 : "Bloqueado para tu perfil por ahora."}
             </p>
             {showPlayerMenu ? (
               <Link
                 href="/player/citas"
-                className="mt-4 inline-flex rounded-full bg-teal px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                className="mt-4 inline-flex rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
               >
-                Abrir citas
+                Abrir salidas
               </Link>
             ) : null}
           </div>

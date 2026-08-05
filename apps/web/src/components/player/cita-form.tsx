@@ -7,7 +7,9 @@ import {
   FIGURA_LABELS,
   PLAYER_COLORS,
   PLAYER_FIGURAS,
+  PLAYER_PRESIONES,
   PLAYER_TALLAS,
+  PRESION_LABELS,
   TALLA_LABELS,
   type ComentarioTipo,
 } from "@/lib/player/constants";
@@ -63,13 +65,13 @@ export function CitaForm() {
       <div className="flex items-center justify-between border-b border-line px-6 py-4">
         <div>
           <p className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
-            Nueva cita
+            Nueva salida
           </p>
         </div>
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="rounded-full bg-teal px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
         >
           {open ? "Cerrar" : "Agregar"}
         </button>
@@ -149,6 +151,20 @@ export function CitaForm() {
               </select>
             </label>
             <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Presión</span>
+              <select
+                name="presion"
+                defaultValue="regular"
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              >
+                {PLAYER_PRESIONES.map((value) => (
+                  <option key={value} value={value}>
+                    {PRESION_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
               <span className="mb-1 block font-medium text-ink">Lugar</span>
               <input
                 required
@@ -194,7 +210,7 @@ export function CitaForm() {
               <button
                 type="button"
                 onClick={() => setComentarios((current) => [...current, newComentario()])}
-                className="rounded-full border border-line px-3 py-1.5 text-sm text-teal"
+                className="rounded-lg border border-line px-3 py-1.5 text-sm text-teal"
               >
                 + Comentario
               </button>
@@ -234,9 +250,9 @@ export function CitaForm() {
             <button
               type="submit"
               disabled={pending}
-              className="rounded-full bg-teal px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+              className="rounded-lg bg-teal px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
             >
-              {pending ? "Guardando..." : "Guardar cita"}
+              {pending ? "Guardando..." : "Guardar salida"}
             </button>
           </div>
         </form>
