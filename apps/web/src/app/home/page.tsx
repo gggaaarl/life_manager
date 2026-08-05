@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
+import Link from "next/link";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -23,6 +25,9 @@ export default async function HomePage() {
     user.user_metadata?.full_name ??
     user.email ??
     "Usuario";
+
+  const accessProfile = await getProfileAccess(supabase, user.id);
+  const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
 
   return (
     <main className="min-h-dvh bg-sand px-6 py-10">
@@ -49,8 +54,18 @@ export default async function HomePage() {
               PLAYER
             </p>
             <p className="mt-2 text-sm text-muted">
-              Historial de citas listo en base de datos.
+              {showPlayerMenu
+                ? "Historial de citas disponible en el menú experimental."
+                : "Bloqueado para tu perfil por ahora."}
             </p>
+            {showPlayerMenu ? (
+              <Link
+                href="/player/citas"
+                className="mt-4 inline-flex rounded-full bg-teal px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+              >
+                Abrir citas
+              </Link>
+            ) : null}
           </div>
           <div className="rounded-2xl bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
             <p className="text-sm text-muted">Próximo</p>
