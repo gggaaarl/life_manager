@@ -2,6 +2,7 @@ import { CitaForm } from "@/components/player/cita-form";
 import { CitasTable, type CitaRow } from "@/components/player/citas-table";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { SessionInfo } from "@/components/auth/session-info";
+import { CitasDebugLog } from "@/components/debug/console-log";
 import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -65,8 +66,17 @@ export default async function PlayerCitasPage() {
 
   const queryError = citasError?.message ?? comentariosError?.message ?? null;
 
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Life Manager] SERVER player/citas", {
+      userId: user.id,
+      citasCount: citas.length,
+      queryError,
+    });
+  }
+
   return (
     <main className="min-h-dvh bg-sand px-6 py-10">
+      <CitasDebugLog userId={user.id} citasCount={citas.length} queryError={queryError} />
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-start justify-between gap-4">
           <div>

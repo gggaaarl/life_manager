@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { SessionInfo } from "@/components/auth/session-info";
+import { SessionDebugLog } from "@/components/debug/console-log";
 import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
 import Link from "next/link";
 
@@ -32,6 +33,13 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-dvh bg-sand px-6 py-10">
+      <SessionDebugLog
+        page="home"
+        userId={user.id}
+        email={profile?.email ?? user.email}
+        role={accessProfile.role}
+        experimentalProfiles={accessProfile.experimental_profiles}
+      />
       <div className="mx-auto max-w-3xl">
         <header className="flex items-start justify-between gap-4">
           <div>
