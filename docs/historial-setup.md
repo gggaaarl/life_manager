@@ -106,6 +106,18 @@ Archivo: `supabase/migrations/20260805160000_player_citas_puntaje_manual.sql`
 - Edición de "Salidas": ícono de lápiz por fila abre un modal (`EditCitaModal`) con todos los campos editables, incluyendo comentarios. Los cambios **no** se guardan solos — hay que dar clic en "Guardar cambios" / "Guardar salida".
 - Comentarios: cada comentario tiene un botón de eliminar (ícono de basura) con confirmación (`¿Eliminar comentario?`) antes de quitarlo de la lista; el borrado real en base de datos ocurre al guardar el formulario.
 
+### 4.1 No usamos ORM — tipos generados desde Supabase
+
+No hay Prisma ni Drizzle. La app habla con Supabase vía `@supabase/supabase-js` (`@supabase/ssr`), que llama a la API REST que Supabase expone sobre Postgres (PostgREST). Los `.select("col1, col2")` son strings; si una columna no existe en la base, antes solo se veía en producción como error de Supabase en tiempo de ejecución.
+
+Para evitar eso:
+
+- `apps/web/src/lib/supabase/database.types.ts` — tipos generados con `npm run db:types` (`supabase gen types typescript --linked`). Se versiona en git y se regenera cada vez que cambia el esquema (después de cada `db:push`).
+- `client.ts` y `server.ts` ahora usan `createBrowserClient<Database>` / `createServerClient<Database>`.
+- Con esto, `npm run build:web` (TypeScript) marca error si el código pide una columna que no existe en la tabla — se confirmó forzando `puntaje_promedio` en el `.select()` de `/player/citas` y el build falló como se esperaba, antes de llegar a producción.
+
+Flujo recomendado después de cualquier migración: `npm run db:push` → `npm run db:types` → `npm run build:web` para confirmar que el código sigue alineado con el esquema.
+
 ## 5. Google OAuth (configuración final)
 
 ### Google Cloud — Cliente “Life Manager Web”

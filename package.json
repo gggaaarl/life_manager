@@ -13,7 +13,7 @@
     "db:link": "npx supabase link --project-ref edbgqpebcfpytyqwaaqd",
     "db:push": "npx supabase db push",
     "db:pull": "npx supabase db pull",
-    "db:types": "npx supabase gen types typescript --linked > packages/shared/src/database.types.ts",
+    "db:types": "npx supabase gen types typescript --linked > apps/web/src/lib/supabase/database.types.ts",
     "db:start": "npx supabase start",
     "db:stop": "npx supabase stop",
     "db:reset": "npx supabase db reset"
