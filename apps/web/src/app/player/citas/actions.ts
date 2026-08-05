@@ -4,15 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
 import {
   COMENTARIO_TIPOS,
+  PLAYER_BELLEZAS,
+  PLAYER_BOTTOMS,
   PLAYER_COLORS,
   PLAYER_FIGURAS,
   PLAYER_PRESIONES,
   PLAYER_TALLAS,
+  PLAYER_TOPS,
   type ComentarioTipo,
+  type PlayerBelleza,
+  type PlayerBottom,
   type PlayerColor,
   type PlayerFigura,
   type PlayerPresion,
   type PlayerTalla,
+  type PlayerTop,
 } from "@/lib/player/constants";
 import { slugifyPersona } from "@/lib/player/format";
 import { revalidatePath } from "next/cache";
@@ -42,10 +48,18 @@ async function requirePlayerAccess() {
   return { supabase, user };
 }
 
-function parseScore(value: FormDataEntryValue | null, label: string): number {
+function parseInt1to100(value: FormDataEntryValue | null, label: string): number {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
     throw new Error(`${label} debe ser un entero entre 1 y 100.`);
+  }
+  return parsed;
+}
+
+function parseMinutos(value: FormDataEntryValue | null): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error("Paciencia debe ser un número de minutos válido.");
   }
   return parsed;
 }
@@ -110,17 +124,17 @@ function parseCitaFields(formData: FormData) {
     color: parseEnum(formData.get("color"), PLAYER_COLORS, "Color") as PlayerColor,
     talla: parseEnum(formData.get("talla"), PLAYER_TALLAS, "Talla") as PlayerTalla,
     figura: parseEnum(formData.get("figura"), PLAYER_FIGURAS, "Figura") as PlayerFigura,
+    belleza: parseEnum(formData.get("belleza"), PLAYER_BELLEZAS, "Belleza") as PlayerBelleza,
+    top: parseEnum(formData.get("top"), PLAYER_TOPS, "Top") as PlayerTop,
+    bottom: parseEnum(formData.get("bottom"), PLAYER_BOTTOMS, "Bottom") as PlayerBottom,
     presion: parseEnum(
       formData.get("presion"),
       PLAYER_PRESIONES,
       "Presión",
     ) as PlayerPresion,
     lugar,
-    puntaje_tightening: parseScore(formData.get("puntaje_tightening"), "Tightening"),
-    puntaje_bottom: parseScore(formData.get("puntaje_bottom"), "Bottom"),
-    puntaje_top: parseScore(formData.get("puntaje_top"), "Top"),
-    puntaje_belleza: parseScore(formData.get("puntaje_belleza"), "Belleza"),
-    puntaje_paciencia: parseScore(formData.get("puntaje_paciencia"), "Paciencia"),
+    paciencia_minutos: parseMinutos(formData.get("paciencia_minutos")),
+    puntaje: parseInt1to100(formData.get("puntaje"), "Puntaje"),
     comentarios: parseComentarios(formData),
   };
 }
@@ -141,12 +155,12 @@ export async function createCita(formData: FormData) {
       color: input.color,
       figura: input.figura,
       talla: input.talla,
+      belleza: input.belleza,
+      top: input.top,
+      bottom: input.bottom,
       presion: input.presion,
-      puntaje_tightening: input.puntaje_tightening,
-      puntaje_bottom: input.puntaje_bottom,
-      puntaje_top: input.puntaje_top,
-      puntaje_belleza: input.puntaje_belleza,
-      puntaje_paciencia: input.puntaje_paciencia,
+      paciencia_minutos: input.paciencia_minutos,
+      puntaje: input.puntaje,
     })
     .select("id")
     .single();
@@ -196,12 +210,12 @@ export async function updateCita(formData: FormData) {
       color: input.color,
       figura: input.figura,
       talla: input.talla,
+      belleza: input.belleza,
+      top: input.top,
+      bottom: input.bottom,
       presion: input.presion,
-      puntaje_tightening: input.puntaje_tightening,
-      puntaje_bottom: input.puntaje_bottom,
-      puntaje_top: input.puntaje_top,
-      puntaje_belleza: input.puntaje_belleza,
-      puntaje_paciencia: input.puntaje_paciencia,
+      paciencia_minutos: input.paciencia_minutos,
+      puntaje: input.puntaje,
     })
     .eq("id", citaId)
     .eq("user_id", user.id);

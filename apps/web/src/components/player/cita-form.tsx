@@ -3,14 +3,20 @@
 import { useState, useTransition } from "react";
 import { createCita } from "@/app/player/citas/actions";
 import {
+  BELLEZA_LABELS,
+  BOTTOM_LABELS,
   COLOR_LABELS,
   FIGURA_LABELS,
+  PLAYER_BELLEZAS,
+  PLAYER_BOTTOMS,
   PLAYER_COLORS,
   PLAYER_FIGURAS,
   PLAYER_PRESIONES,
   PLAYER_TALLAS,
+  PLAYER_TOPS,
   PRESION_LABELS,
   TALLA_LABELS,
+  TOP_LABELS,
   type ComentarioTipo,
 } from "@/lib/player/constants";
 import { ComentarioTipoPicker } from "@/components/player/comentario-tipo-badge";
@@ -39,6 +45,13 @@ export function CitaForm() {
     setComentarios((current) =>
       current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     );
+  }
+
+  function deleteComentario(id: string) {
+    if (!window.confirm("¿Eliminar comentario?")) {
+      return;
+    }
+    setComentarios((current) => current.filter((item) => item.id !== id));
   }
 
   function handleSubmit(formData: FormData) {
@@ -151,6 +164,48 @@ export function CitaForm() {
               </select>
             </label>
             <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Belleza</span>
+              <select
+                name="belleza"
+                defaultValue="regular"
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              >
+                {PLAYER_BELLEZAS.map((value) => (
+                  <option key={value} value={value}>
+                    {BELLEZA_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Top</span>
+              <select
+                name="top"
+                defaultValue="regular"
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              >
+                {PLAYER_TOPS.map((value) => (
+                  <option key={value} value={value}>
+                    {TOP_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Bottom</span>
+              <select
+                name="bottom"
+                defaultValue="regular"
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              >
+                {PLAYER_BOTTOMS.map((value) => (
+                  <option key={value} value={value}>
+                    {BOTTOM_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
               <span className="mb-1 block font-medium text-ink">Presión</span>
               <select
                 name="presion"
@@ -174,34 +229,29 @@ export function CitaForm() {
                 className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
               />
             </label>
-          </div>
-
-          <div>
-            <p className="mb-3 text-sm font-medium text-ink">Puntajes (1–100)</p>
-            <div className="grid gap-3 sm:grid-cols-5">
-              {(
-                [
-                  ["puntaje_tightening", "Tightening", 90],
-                  ["puntaje_bottom", "Bottom", 90],
-                  ["puntaje_top", "Top", 90],
-                  ["puntaje_belleza", "Belleza", 90],
-                  ["puntaje_paciencia", "Paciencia", 90],
-                ] as const
-              ).map(([name, label, defaultValue]) => (
-                <label key={name} className="block text-sm">
-                  <span className="mb-1 block text-muted">{label}</span>
-                  <input
-                    required
-                    type="number"
-                    min={1}
-                    max={100}
-                    name={name}
-                    defaultValue={defaultValue}
-                    className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
-                  />
-                </label>
-              ))}
-            </div>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Paciencia (min)</span>
+              <input
+                required
+                type="number"
+                min={0}
+                name="paciencia_minutos"
+                defaultValue={0}
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Puntaje</span>
+              <input
+                required
+                type="number"
+                min={1}
+                max={100}
+                name="puntaje"
+                defaultValue={50}
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              />
+            </label>
           </div>
 
           <div className="space-y-3">
@@ -225,6 +275,7 @@ export function CitaForm() {
                   <ComentarioTipoPicker
                     value={comentario.tipo}
                     onChange={(tipo) => updateComentario(comentario.id, { tipo })}
+                    onDelete={() => deleteComentario(comentario.id)}
                   />
                 </div>
                 <textarea

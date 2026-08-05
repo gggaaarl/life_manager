@@ -11,70 +11,86 @@ Los comentarios y puntajes son **por cita**, no globales por persona.
 ## Flujo de captura (web o app)
 
 1. Usuario autenticado con Google y job PLAYER `active`.
-2. Crea una cita con datos base + categorías + puntajes.
-3. El sistema calcula `puntaje_promedio`.
-4. Agrega 0..n comentarios asociados a esa cita.
-5. Puede editar comentarios o agregar nuevos después.
+2. Crea una salida con datos base + categorías.
+3. Asigna el `puntaje` (1–100) a mano — no se calcula automático.
+4. Agrega 0..n comentarios asociados a esa salida.
+5. Puede editar campos, puntaje y comentarios después. Nada se guarda solo: hay que dar clic en "Guardar salida" / "Guardar cambios".
 
-## Campos de una cita
+## Campos de una salida
 
 | Campo | Tipo | Requerido | Notas |
 |---|---|---|---|
-| `fecha` | date / timestamptz | sí | Fecha (y opcionalmente hora) de la cita |
+| `fecha` | date / timestamptz | sí | Fecha (y opcionalmente hora) de la salida |
 | `lugar` | text | sí | Lugar del encuentro |
-| `codigo_identificador` | text | sí | Código de la persona (reutilizable entre citas) |
-| `nombre` | text | sí | Nombre / alias mostrado |
-| `descripcion` | text | no | Notas libres de la cita |
-| `categoria_1` | enum | sí | Color (ver catálogo) |
-| `categoria_2` | enum | sí | Contextura |
-| `categoria_3` | enum | sí | Talla |
-| `puntaje_tightening` | int 1–100 | sí | Puntaje 1 |
-| `puntaje_bottom` | int 1–100 | sí | Puntaje 2 |
-| `puntaje_top` | int 1–100 | sí | Puntaje 3 |
-| `puntaje_belleza` | int 1–100 | sí | Puntaje 4 |
-| `puntaje_paciencia` | int 1–100 | sí | Puntaje 5 |
-| `puntaje_promedio` | numeric | calculado | Promedio de los 5 puntajes |
+| `codigo_identificador` | text | sí | Código de la persona (derivado del nombre, reutilizable entre salidas) |
+| `persona` | text | sí | Nombre / alias mostrado |
+| `caracteristica` | text | no | Notas libres de la salida |
+| `color` | enum | sí | blanca / canela / negra |
+| `talla` | enum | sí | caballo / mediana / chata |
+| `figura` | enum | sí | bbw / chubby / vedette / fitness / delgada |
+| `belleza` | enum | sí | regular / modelo, default `regular` |
+| `top` | enum | sí | regular / mega, default `regular` |
+| `bottom` | enum | sí | regular / mega, default `regular` |
+| `presion` | enum | sí | cocomordan / regular, default `regular` |
+| `paciencia_minutos` | int >= 0 | sí | Tiempo en minutos |
+| `puntaje` | int 1–100 | sí | Asignado a mano por el usuario |
 | `comentario_1..n` | vía tabla hija | no | Ver sección Comentarios |
-
-### Cálculo de promedio
-
-```text
-puntaje_promedio =
-  (tightening + bottom + top + belleza + paciencia) / 5
-```
-
-Se guarda en la fila de la cita (denormalizado) y se recalcula al crear/actualizar puntajes.  
-Precisión sugerida: 2 decimales.
 
 ## Catálogos (enums)
 
-### Categoría 1 — Color
+### Color
 
 | Valor interno | Etiqueta UI |
 |---|---|
-| `blanca_palida` | Blanca pálida |
-| `blanca_perla` | Blanca perla |
-| `chocolate_claro` | Chocolate claro |
-| `chocolate_oscuro` | Chocolate oscuro |
-| `marron` | Marrón |
+| `blanca` | Blanca |
+| `canela` | Canela |
+| `negra` | Negra |
 
-### Categoría 2 — Contextura
+### Talla
+
+| Valor interno | Etiqueta UI |
+|---|---|
+| `caballo` | Caballo |
+| `mediana` | Mediana |
+| `chata` | Chata |
+
+### Figura
 
 | Valor interno | Etiqueta UI |
 |---|---|
 | `bbw` | BBW |
 | `chubby` | Chubby |
 | `vedette` | Vedette |
-| `fit` | Fit |
-| `flaca` | Flaca |
+| `fitness` | Fitness |
+| `delgada` | Delgada |
 
-### Categoría 3 — Talla
+### Belleza
 
 | Valor interno | Etiqueta UI |
 |---|---|
-| `caballona` | Caballona |
-| `mediana` | Mediana |
-| `chata` | Chata |
+| `regular` | Regular |
+| `modelo` | Modelo |
+
+### Top
+
+| Valor interno | Etiqueta UI |
+|---|---|
+| `regular` | Regular |
+| `mega` | Mega |
+
+### Bottom
+
+| Valor interno | Etiqueta UI |
+|---|---|
+| `regular` | Regular |
+| `mega` | Mega |
+
+### Presión
+
+| Valor interno | Etiqueta UI |
+|---|---|
+| `cocomordan` | Cocomordan |
+| `regular` | Regular |
 
 ## Comentarios
 

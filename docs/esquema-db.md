@@ -126,45 +126,32 @@ Historial de citas del job PLAYER.
 | `codigo_identificador` | text | persona lógica |
 | `nombre` | text | |
 | `descripcion` | text | nullable |
-| `categoria_1` | player_categoria_color | |
-| `categoria_2` | player_categoria_contextura | |
-| `categoria_3` | player_categoria_talla | |
-| `puntaje_tightening` | smallint | 1–100 |
-| `puntaje_bottom` | smallint | 1–100 |
-| `puntaje_top` | smallint | 1–100 |
-| `puntaje_belleza` | smallint | 1–100 |
-| `puntaje_paciencia` | smallint | 1–100 |
-| `puntaje_promedio` | numeric(5,2) | calculado |
+| `color` | player_color | blanca / canela / negra |
+| `talla` | player_talla | caballo / mediana / chata |
+| `figura` | player_figura | bbw / chubby / vedette / fitness / delgada |
+| `belleza` | player_belleza | regular / modelo, default `regular` |
+| `top` | player_top | regular / mega, default `regular` |
+| `bottom` | player_bottom | regular / mega, default `regular` |
+| `presion` | player_presion | cocomordan / regular, default `regular` |
+| `paciencia_minutos` | smallint | minutos, >= 0 |
+| `puntaje` | smallint | 1–100, asignado a mano por el usuario (no se calcula) |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
 Checks:
 
 ```sql
-puntaje_tightening between 1 and 100
-puntaje_bottom between 1 and 100
-puntaje_top between 1 and 100
-puntaje_belleza between 1 and 100
-puntaje_paciencia between 1 and 100
+paciencia_minutos >= 0
+puntaje between 1 and 100
 ```
 
-Trigger sugerido (before insert/update):
-
-```sql
-NEW.puntaje_promedio := round((
-  NEW.puntaje_tightening
-  + NEW.puntaje_bottom
-  + NEW.puntaje_top
-  + NEW.puntaje_belleza
-  + NEW.puntaje_paciencia
-) / 5.0, 2);
-```
+> `puntaje` ya no se calcula por trigger. El usuario lo asigna directamente al crear/editar la salida.
 
 Indexes sugeridos:
 
 - `(user_id, fecha desc)`
 - `(user_id, codigo_identificador)`
-- `(user_id, puntaje_promedio desc)`
+- `(user_id, puntaje desc)`
 
 ### `player_citas_comentarios`
 
@@ -245,17 +232,17 @@ create table public.player_citas (
   fecha timestamptz not null,
   lugar text not null,
   codigo_identificador text not null,
-  nombre text not null,
-  descripcion text,
-  categoria_1 public.player_categoria_color not null,
-  categoria_2 public.player_categoria_contextura not null,
-  categoria_3 public.player_categoria_talla not null,
-  puntaje_tightening smallint not null check (puntaje_tightening between 1 and 100),
-  puntaje_bottom smallint not null check (puntaje_bottom between 1 and 100),
-  puntaje_top smallint not null check (puntaje_top between 1 and 100),
-  puntaje_belleza smallint not null check (puntaje_belleza between 1 and 100),
-  puntaje_paciencia smallint not null check (puntaje_paciencia between 1 and 100),
-  puntaje_promedio numeric(5,2) not null,
+  persona text not null,
+  caracteristica text,
+  color public.player_color not null,
+  talla public.player_talla not null,
+  figura public.player_figura not null,
+  belleza public.player_belleza not null default 'regular',
+  top public.player_top not null default 'regular',
+  bottom public.player_bottom not null default 'regular',
+  presion public.player_presion not null default 'regular',
+  paciencia_minutos smallint not null default 0 check (paciencia_minutos >= 0),
+  puntaje smallint not null check (puntaje between 1 and 100),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

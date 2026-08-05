@@ -5,19 +5,28 @@ import { useMemo, useState, useTransition } from "react";
 import { updateCita } from "@/app/player/citas/actions";
 import { ComentarioTipoBadge, ComentarioTipoPicker } from "@/components/player/comentario-tipo-badge";
 import {
+  BELLEZA_LABELS,
+  BOTTOM_LABELS,
   COLOR_LABELS,
   FIGURA_LABELS,
+  PLAYER_BELLEZAS,
+  PLAYER_BOTTOMS,
   PLAYER_COLORS,
   PLAYER_FIGURAS,
   PLAYER_PRESIONES,
   PLAYER_TALLAS,
+  PLAYER_TOPS,
   PRESION_LABELS,
   TALLA_LABELS,
+  TOP_LABELS,
   type ComentarioTipo,
+  type PlayerBelleza,
+  type PlayerBottom,
   type PlayerColor,
   type PlayerFigura,
   type PlayerPresion,
   type PlayerTalla,
+  type PlayerTop,
 } from "@/lib/player/constants";
 import { formatComentario, formatFechaCorta, formatPersona } from "@/lib/player/format";
 
@@ -29,14 +38,13 @@ export type CitaRow = {
   color: PlayerColor;
   talla: PlayerTalla;
   figura: PlayerFigura;
+  belleza: PlayerBelleza;
+  top: PlayerTop;
+  bottom: PlayerBottom;
   presion: PlayerPresion;
   lugar: string;
-  puntaje_promedio: number;
-  puntaje_tightening: number;
-  puntaje_bottom: number;
-  puntaje_top: number;
-  puntaje_belleza: number;
-  puntaje_paciencia: number;
+  paciencia_minutos: number;
+  puntaje: number;
   comentarios: Array<{
     id: string;
     contenido: string;
@@ -78,9 +86,13 @@ export function CitasTable({ citas }: { citas: CitaRow[] }) {
                 <th className="px-4 py-3 font-semibold">Color</th>
                 <th className="px-4 py-3 font-semibold">Talla</th>
                 <th className="px-4 py-3 font-semibold">Figura</th>
+                <th className="px-4 py-3 font-semibold">Belleza</th>
+                <th className="px-4 py-3 font-semibold">Top</th>
+                <th className="px-4 py-3 font-semibold">Bottom</th>
                 <th className="px-4 py-3 font-semibold">Presión</th>
                 <th className="px-4 py-3 font-semibold">Lugar</th>
-                <th className="px-4 py-3 font-semibold">Prom.</th>
+                <th className="px-4 py-3 font-semibold">Paciencia</th>
+                <th className="px-4 py-3 font-semibold">Puntaje</th>
                 <th className="px-4 py-3 font-semibold">Comentarios</th>
               </tr>
             </thead>
@@ -113,11 +125,23 @@ export function CitasTable({ citas }: { citas: CitaRow[] }) {
                     <Tag>{FIGURA_LABELS[cita.figura]}</Tag>
                   </td>
                   <td className="px-4 py-4">
+                    <Tag>{BELLEZA_LABELS[cita.belleza]}</Tag>
+                  </td>
+                  <td className="px-4 py-4">
+                    <Tag>{TOP_LABELS[cita.top]}</Tag>
+                  </td>
+                  <td className="px-4 py-4">
+                    <Tag>{BOTTOM_LABELS[cita.bottom]}</Tag>
+                  </td>
+                  <td className="px-4 py-4">
                     <Tag>{PRESION_LABELS[cita.presion]}</Tag>
                   </td>
                   <td className="px-4 py-4 text-ink">{cita.lugar}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-ink">
+                    {cita.paciencia_minutos} min
+                  </td>
                   <td className="px-4 py-4 font-[family-name:var(--font-display)] text-base font-bold text-teal">
-                    {Number(cita.puntaje_promedio).toFixed(0)}
+                    {cita.puntaje}
                   </td>
                   <td className="max-w-md px-4 py-4">
                     <div className="space-y-2">
@@ -161,6 +185,13 @@ function EditCitaModal({ cita, onClose }: { cita: CitaRow; onClose: () => void }
     setComentarios((current) =>
       current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     );
+  }
+
+  function deleteComentario(id: string) {
+    if (!window.confirm("¿Eliminar comentario?")) {
+      return;
+    }
+    setComentarios((current) => current.filter((item) => item.id !== id));
   }
 
   function handleSubmit(formData: FormData) {
@@ -280,6 +311,48 @@ function EditCitaModal({ cita, onClose }: { cita: CitaRow; onClose: () => void }
               </select>
             </label>
             <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Belleza</span>
+              <select
+                name="belleza"
+                defaultValue={cita.belleza}
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              >
+                {PLAYER_BELLEZAS.map((value) => (
+                  <option key={value} value={value}>
+                    {BELLEZA_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Top</span>
+              <select
+                name="top"
+                defaultValue={cita.top}
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              >
+                {PLAYER_TOPS.map((value) => (
+                  <option key={value} value={value}>
+                    {TOP_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Bottom</span>
+              <select
+                name="bottom"
+                defaultValue={cita.bottom}
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              >
+                {PLAYER_BOTTOMS.map((value) => (
+                  <option key={value} value={value}>
+                    {BOTTOM_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
               <span className="mb-1 block font-medium text-ink">Presión</span>
               <select
                 name="presion"
@@ -293,7 +366,7 @@ function EditCitaModal({ cita, onClose }: { cita: CitaRow; onClose: () => void }
                 ))}
               </select>
             </label>
-            <label className="block text-sm md:col-span-2">
+            <label className="block text-sm">
               <span className="mb-1 block font-medium text-ink">Lugar</span>
               <input
                 required
@@ -303,36 +376,29 @@ function EditCitaModal({ cita, onClose }: { cita: CitaRow; onClose: () => void }
                 className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
               />
             </label>
-          </div>
-
-          <div>
-            <p className="mb-2 text-sm font-medium text-ink">
-              Puntajes (PROM. se recalcula solo)
-            </p>
-            <div className="grid gap-3 sm:grid-cols-5">
-              {(
-                [
-                  ["puntaje_tightening", "Tightening", cita.puntaje_tightening],
-                  ["puntaje_bottom", "Bottom", cita.puntaje_bottom],
-                  ["puntaje_top", "Top", cita.puntaje_top],
-                  ["puntaje_belleza", "Belleza", cita.puntaje_belleza],
-                  ["puntaje_paciencia", "Paciencia", cita.puntaje_paciencia],
-                ] as const
-              ).map(([name, label, defaultValue]) => (
-                <label key={name} className="block text-sm">
-                  <span className="mb-1 block text-muted">{label}</span>
-                  <input
-                    required
-                    type="number"
-                    min={1}
-                    max={100}
-                    name={name}
-                    defaultValue={defaultValue}
-                    className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
-                  />
-                </label>
-              ))}
-            </div>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Paciencia (min)</span>
+              <input
+                required
+                type="number"
+                min={0}
+                name="paciencia_minutos"
+                defaultValue={cita.paciencia_minutos}
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-ink">Puntaje</span>
+              <input
+                required
+                type="number"
+                min={1}
+                max={100}
+                name="puntaje"
+                defaultValue={cita.puntaje}
+                className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 outline-none focus:border-teal"
+              />
+            </label>
           </div>
 
           <div className="space-y-3">
@@ -357,6 +423,7 @@ function EditCitaModal({ cita, onClose }: { cita: CitaRow; onClose: () => void }
                   <ComentarioTipoPicker
                     value={comentario.tipo}
                     onChange={(tipo) => updateComentario(comentario.id, { tipo })}
+                    onDelete={() => deleteComentario(comentario.id)}
                   />
                 </div>
                 <textarea

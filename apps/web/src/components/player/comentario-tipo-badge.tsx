@@ -18,30 +18,59 @@ export function ComentarioTipoBadge({ tipo }: { tipo: ComentarioTipo }) {
 export function ComentarioTipoPicker({
   value,
   onChange,
+  onDelete,
 }: {
   value: ComentarioTipo;
   onChange: (tipo: ComentarioTipo) => void;
+  onDelete?: () => void;
 }) {
   const tipos: ComentarioTipo[] = ["dicho", "pensamiento"];
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {tipos.map((tipo) => (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {tipos.map((tipo) => (
+          <button
+            key={tipo}
+            type="button"
+            onClick={() => onChange(tipo)}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+              value === tipo
+                ? tipo === "pensamiento"
+                  ? "bg-forest text-white"
+                  : "bg-teal text-white"
+                : "border border-line bg-white text-muted"
+            }`}
+          >
+            {COMENTARIO_TIPO_LABELS[tipo]}
+          </button>
+        ))}
+      </div>
+      {onDelete ? (
         <button
-          key={tipo}
           type="button"
-          onClick={() => onChange(tipo)}
-          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-            value === tipo
-              ? tipo === "pensamiento"
-                ? "bg-forest text-white"
-                : "bg-teal text-white"
-              : "border border-line bg-white text-muted"
-          }`}
+          onClick={onDelete}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted transition hover:bg-white hover:text-[var(--lm-danger)]"
+          aria-label="Eliminar comentario"
+          title="Eliminar comentario"
         >
-          {COMENTARIO_TIPO_LABELS[tipo]}
+          <TrashIcon />
         </button>
-      ))}
+      ) : null}
     </div>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

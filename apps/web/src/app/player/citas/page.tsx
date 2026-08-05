@@ -26,7 +26,7 @@ export default async function PlayerCitasPage() {
   const { data: citasRaw, error: citasError } = await supabase
     .from("player_citas")
     .select(
-      "id, fecha, persona, caracteristica, color, talla, figura, presion, lugar, puntaje_promedio, puntaje_tightening, puntaje_bottom, puntaje_top, puntaje_belleza, puntaje_paciencia",
+      "id, fecha, persona, caracteristica, color, talla, figura, belleza, top, bottom, presion, lugar, paciencia_minutos, puntaje",
     )
     .eq("user_id", user.id)
     .order("fecha", { ascending: false });

@@ -73,6 +73,24 @@ Archivo: `supabase/migrations/20260725000101_jobs_user_jobs_trainee_driver_playe
   | 3 | `PLAYER` | `locked` |
 - Trigger `handle_new_user` actualizado: crea `profiles` + 3 filas `user_jobs`
 
+### 3.5 Migración 3 — presión
+Archivo: `supabase/migrations/20260805150000_player_citas_presion.sql`
+
+- Enum `player_presion` (`cocomordan`, `regular`)
+- Columna `presion` en `player_citas`, default `regular`
+
+### 3.6 Migración 4 — puntaje manual + belleza/top/bottom/paciencia
+Archivo: `supabase/migrations/20260805160000_player_citas_puntaje_manual.sql`
+
+- Se elimina el trigger que calculaba `puntaje_promedio` automático y las columnas de score individuales (`puntaje_tightening`, `puntaje_bottom`, `puntaje_top`, `puntaje_belleza`, `puntaje_paciencia`, `puntaje_promedio`).
+- `belleza`, `top`, `bottom` dejan de ser scores 1–100 y pasan a ser catálogos fijos:
+  - `belleza`: `regular` / `modelo`
+  - `top`: `regular` / `mega`
+  - `bottom`: `regular` / `mega`
+  - default `regular` en los tres
+- `paciencia_minutos` (smallint, minutos, default 0) reemplaza el score de paciencia.
+- `puntaje` (smallint 1–100) es ahora el único puntaje, asignado a mano por el usuario en el formulario — no se recalcula.
+
 ## 4. Web (`apps/web`)
 
 - Next.js 16 + Tailwind + Syne / DM Sans
@@ -82,7 +100,11 @@ Archivo: `supabase/migrations/20260725000101_jobs_user_jobs_trainee_driver_playe
   - `/auth/callback` — intercambia `code` por sesión
   - `/home` — post-login
   - `/` — si llega `?code=` lo reenvía a `/auth/callback`; si no, manda a login/home
+  - `/player/citas` — historial de "Salidas" del job PLAYER
 - Cliente Supabase: `@supabase/ssr` (browser + server + middleware)
+- `AppHeader` (`src/components/layout/app-header.tsx`): header global con nav (Hub, Salidas) y "Cerrar sesión"; en desktop es una barra, en mobile es un menú hamburguesa de 3 líneas.
+- Edición de "Salidas": ícono de lápiz por fila abre un modal (`EditCitaModal`) con todos los campos editables, incluyendo comentarios. Los cambios **no** se guardan solos — hay que dar clic en "Guardar cambios" / "Guardar salida".
+- Comentarios: cada comentario tiene un botón de eliminar (ícono de basura) con confirmación (`¿Eliminar comentario?`) antes de quitarlo de la lista; el borrado real en base de datos ocurre al guardar el formulario.
 
 ## 5. Google OAuth (configuración final)
 
