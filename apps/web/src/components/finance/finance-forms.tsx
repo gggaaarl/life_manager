@@ -10,19 +10,10 @@ import {
 import { normalizeExpenseLabel, type ExpenseItemRow } from "@life-manager/shared/finance/expense-items";
 
 function formatItemOption(item: ExpenseItemRow): string {
-  const parts = [item.name];
-  const brand = item.brand?.trim();
-  if (
-    brand &&
-    normalizeExpenseLabel(brand) !== normalizeExpenseLabel(item.name) &&
-    !normalizeExpenseLabel(item.name).includes(normalizeExpenseLabel(brand))
-  ) {
-    parts.push(brand);
-  }
   if (item.default_price_soles > 0) {
-    parts.push(`S/ ${item.default_price_soles.toFixed(2)}`);
+    return `${item.name} · S/ ${item.default_price_soles.toFixed(2)}`;
   }
-  return parts.join(" · ");
+  return item.name;
 }
 
 export function FinanceForms({
@@ -78,7 +69,7 @@ export function FinanceForms({
     setQuery(item.name);
     setSelectedId(item.id);
     setListOpen(false);
-    if (!amount && item.default_price_soles > 0) {
+    if (item.default_price_soles > 0) {
       setAmount(String(item.default_price_soles));
     }
   }
