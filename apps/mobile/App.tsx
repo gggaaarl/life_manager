@@ -15,15 +15,15 @@ import { signInWithGoogle, signOut } from "./lib/auth";
 import { supabase } from "./lib/supabase";
 
 const COLORS = {
-  void: "#040807",
-  sand: "#080f0e",
-  panel: "#0c1614",
-  line: "#1a2e2a",
-  ink: "#e8f4f1",
-  muted: "#7a9490",
-  mint: "#5eead4",
-  teal: "#2a9d8a",
-  danger: "#f87171",
+  void: "#060806",
+  sand: "#0a0d08",
+  panel: "#0e120c",
+  line: "#1e2419",
+  ink: "#e8ede4",
+  muted: "#8a9580",
+  sage: "#a3b18a",
+  sageDark: "#7d9168",
+  danger: "#e07a7a",
 };
 
 export default function App() {
@@ -86,7 +86,7 @@ export default function App() {
   if (loading) {
     return (
       <View style={[styles.centered, styles.screen]}>
-        <ActivityIndicator size="large" color={COLORS.teal} />
+        <ActivityIndicator size="large" color={COLORS.sageDark} />
       </View>
     );
   }
@@ -95,11 +95,8 @@ export default function App() {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.loginWrap}>
-          <Text style={styles.brandLine1}>naturaleza</Text>
+          <Text style={styles.brandLine1}>NATURALEZA</Text>
           <Text style={styles.brandLine2}>CRUEL</Text>
-          <Text style={styles.tagline}>
-            Sistema vivo. Datos, cuerpo y capital en un solo organismo.
-          </Text>
           <Pressable
             style={[styles.button, busy && styles.buttonDisabled]}
             onPress={handleSignIn}
@@ -120,7 +117,7 @@ export default function App() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>HUB</Text>
-        <Text style={styles.brandLine1}>naturaleza</Text>
+        <Text style={styles.brandLine1}>NATURALEZA</Text>
         <Text style={styles.brandLine2Small}>CRUEL</Text>
         <Text style={styles.email}>{session.user.email}</Text>
 
@@ -175,7 +172,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   kicker: {
-    color: COLORS.teal,
+    color: COLORS.sageDark,
     fontWeight: "700",
     letterSpacing: 2,
     fontSize: 12,
@@ -189,23 +186,16 @@ const styles = StyleSheet.create({
   brandLine2: {
     fontSize: 36,
     fontWeight: "700",
-    color: COLORS.mint,
+    color: COLORS.sage,
     letterSpacing: -0.5,
-    marginBottom: 12,
+    marginBottom: 28,
   },
   brandLine2Small: {
     fontSize: 28,
     fontWeight: "700",
-    color: COLORS.mint,
+    color: COLORS.sage,
     marginTop: -8,
     marginBottom: 4,
-  },
-  tagline: {
-    fontSize: 15,
-    color: COLORS.muted,
-    lineHeight: 22,
-    marginBottom: 28,
-    maxWidth: 320,
   },
   email: {
     color: COLORS.muted,
@@ -229,7 +219,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   button: {
-    backgroundColor: COLORS.teal,
+    backgroundColor: COLORS.sageDark,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 12,

@@ -15,8 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "naturalezaCRUEL",
-  description: "Sistema vivo — cuerpo, capital y progreso.",
+  title: "NATURALEZACRUEL",
 };
 
 export default function RootLayout({

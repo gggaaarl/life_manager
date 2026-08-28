@@ -50,7 +50,7 @@ export function AppHeader({
           href="/home"
           className="font-[family-name:var(--font-display)] text-xs font-bold tracking-[0.08em] text-mint sm:text-sm"
         >
-          naturaleza<span className="text-teal">CRUEL</span>
+          NATURALEZA<span className="text-mint">CRUEL</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
