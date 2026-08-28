@@ -11,11 +11,12 @@ import {
   buildFinanceExpenseRows,
   buildFinanceIncomeRows,
   computeNetBalance,
+  resolveAccountSnapshotsAsOf,
   summarizeDayIncomeByJob,
   sumPersonalDayExpenses,
   type LedgerMovement,
 } from "@life-manager/shared/finance/ledger";
-import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
+import { dayRangeInLima, todayInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -51,6 +52,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
     { data: dayMovements },
     { data: cumulativeMovements },
     { data: paymentAccounts },
+    { data: balanceSnapshots },
     { data: driverJob },
     { data: expenseItems },
   ] = await Promise.all([
@@ -70,9 +72,14 @@ export default async function FinancePage({ searchParams }: PageProps) {
       .order("occurred_at", { ascending: true }),
     supabase
       .from("user_payment_accounts")
-      .select("id, slug, label, sort_order, is_active, user_account_balances(balance_soles)")
+      .select("id, slug, label, sort_order, is_active")
       .eq("user_id", user.id)
       .order("sort_order"),
+    supabase
+      .from("user_account_balance_snapshots")
+      .select("payment_account_id, balance_date, balance_soles")
+      .eq("user_id", user.id)
+      .lte("balance_date", workDate),
     supabase.from("jobs").select("id").eq("code", "DRIVER").maybeSingle(),
     supabase
       .from("expense_items")
@@ -92,19 +99,18 @@ export default async function FinancePage({ searchParams }: PageProps) {
   const personalExpenseTotal = sumPersonalDayExpenses(expenseRows);
   const totalNet = computeNetBalance(cumulativeRows);
 
-  const accounts = (paymentAccounts ?? []).map((row) => {
-    const balanceRow = Array.isArray(row.user_account_balances)
-      ? row.user_account_balances[0]
-      : row.user_account_balances;
-    return {
-      id: row.id,
-      slug: row.slug,
-      label: row.label,
-      sort_order: row.sort_order,
-      is_active: row.is_active,
-      allocated_soles: Number(balanceRow?.balance_soles ?? 0),
-    };
-  });
+  const snapshotByAccount = resolveAccountSnapshotsAsOf(balanceSnapshots ?? [], workDate);
+
+  const accounts = (paymentAccounts ?? []).map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    label: row.label,
+    sort_order: row.sort_order,
+    is_active: row.is_active,
+    allocated_soles: snapshotByAccount.get(row.id) ?? 0,
+  }));
+
+  const isToday = workDate === todayInLima();
 
   return (
     <main className="min-h-dvh bg-sand">
@@ -116,7 +122,12 @@ export default async function FinancePage({ searchParams }: PageProps) {
         </div>
 
         <div className="mt-4">
-          <WalletBalancesEditor workDate={workDate} totalNet={totalNet} accounts={accounts} />
+          <WalletBalancesEditor
+            workDate={workDate}
+            isToday={isToday}
+            totalNet={totalNet}
+            accounts={accounts}
+          />
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">

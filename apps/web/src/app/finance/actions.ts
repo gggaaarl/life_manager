@@ -570,6 +570,7 @@ export async function updateAccountAllocation(formData: FormData) {
   const { supabase, user } = await requireUser();
   const accountId = String(formData.get("account_id") ?? "").trim();
   const amount = parseAmount(formData.get("amount_soles"));
+  const workDate = String(formData.get("work_date") ?? "").trim() || todayInLima();
 
   if (!accountId) {
     throw new Error("Cuenta inválida.");
@@ -590,14 +591,15 @@ export async function updateAccountAllocation(formData: FormData) {
     throw new Error("Efectivo se calcula automáticamente.");
   }
 
-  const { error } = await supabase.from("user_account_balances").upsert(
+  const { error } = await supabase.from("user_account_balance_snapshots").upsert(
     {
       user_id: user.id,
       payment_account_id: accountId,
+      balance_date: workDate,
       balance_soles: amount,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "user_id,payment_account_id" },
+    { onConflict: "user_id,payment_account_id,balance_date" },
   );
 
   if (error) {

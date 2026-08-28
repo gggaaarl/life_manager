@@ -31,6 +31,7 @@ export function resolveJobCode(row: LedgerMovement): string {
 export function isPersonalFinanceExpense(row: LedgerMovement): boolean {
   if (row.direction !== "out") return false;
   if (row.source === "driver_expense") return false;
+  if (row.job_id != null) return false;
   return row.source === "expense" || row.source === "food";
 }
 
@@ -53,7 +54,13 @@ export function sumFoodExpenses(expenses: LedgerMovement[]): number {
 export function isDriverJobExpense(row: LedgerMovement, driverJobId: string | null): boolean {
   if (row.direction !== "out") return false;
   if (row.source === "driver_expense") return true;
-  return driverJobId != null && row.job_id === driverJobId && row.source !== "food";
+  return driverJobId != null && row.job_id === driverJobId && row.source === "expense";
+}
+
+/** Gasto ligado a un job (taxi, botánico, etc.) */
+export function isJobLinkedExpense(row: LedgerMovement): boolean {
+  if (row.direction !== "out" || row.job_id == null) return false;
+  return row.source === "driver_expense" || row.source === "expense";
 }
 
 export function incomeDescriptionForFinance(row: LedgerMovement): string {
@@ -94,7 +101,7 @@ export function summarizeDayIncomeByJob(
   }
 
   for (const row of expenses) {
-    if (!isDriverJobExpense(row, driverJobId)) continue;
+    if (!isJobLinkedExpense(row)) continue;
     const jobCode = resolveJobCode(row);
     const key = row.job_id ?? jobCode;
     const current = map.get(key) ?? { jobCode, gross: 0, jobExpenses: 0 };
@@ -103,13 +110,13 @@ export function summarizeDayIncomeByJob(
   }
 
   return [...map.values()]
-    .filter((row) => row.gross > 0)
+    .filter((row) => row.gross > 0 || row.jobExpenses > 0)
     .map((row) => ({
       jobCode: row.jobCode,
       label: jobCodeToLabel(row.jobCode, "income"),
       gross: row.gross,
       jobExpenses: row.jobExpenses,
-      net: row.jobCode === "DRIVER" ? row.gross - row.jobExpenses : row.gross,
+      net: row.gross - row.jobExpenses,
       isTaxi: row.jobCode === "DRIVER",
     }));
 }
@@ -146,6 +153,29 @@ export function buildFinanceIncomeRows(incomes: LedgerMovement[]): SheetIncomeRo
     editLabel: row.label?.trim() || incomeDescriptionForFinance(row),
     amount: Number(row.amount_soles),
   }));
+}
+
+export type AccountBalanceSnapshot = {
+  payment_account_id: string;
+  balance_date: string;
+  balance_soles: number;
+};
+
+/** Última asignación conocida por cuenta en o antes de `asOfDate`. */
+export function resolveAccountSnapshotsAsOf(
+  snapshots: AccountBalanceSnapshot[],
+  asOfDate: string,
+): Map<string, number> {
+  const latest = new Map<string, { date: string; amount: number }>();
+  for (const row of snapshots) {
+    if (row.balance_date > asOfDate) continue;
+    const amount = Number(row.balance_soles);
+    const prev = latest.get(row.payment_account_id);
+    if (!prev || row.balance_date >= prev.date) {
+      latest.set(row.payment_account_id, { date: row.balance_date, amount });
+    }
+  }
+  return new Map([...latest.entries()].map(([id, v]) => [id, v.amount]));
 }
 
 export type PaymentAccountAllocation = {
