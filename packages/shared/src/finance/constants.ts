@@ -19,6 +19,7 @@ export const EXPENSE_CATEGORIES = [
   "app_saldo",
   "llantas",
   "mantenimiento",
+  "bano",
   "otro",
 ] as const;
 
@@ -38,6 +39,7 @@ export const DRIVER_EXPENSE_CATEGORIES = [
   "combustible_gasolina",
   "llantas",
   "app_saldo",
+  "bano",
 ] as const satisfies readonly ExpenseCategory[];
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -64,6 +66,7 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   app_saldo: "Saldo",
   llantas: "Llantas",
   mantenimiento: "Mantenimiento",
+  bano: "Baño",
   otro: "Otro",
 };
 
@@ -92,6 +95,7 @@ export const DRIVER_EXPENSE_CATEGORY_LABELS: Record<
   combustible_gasolina: "Gasolina",
   llantas: "Llantas",
   app_saldo: "Saldo",
+  bano: "Baño",
 };
 
 export function todayUtcRange(): { start: string; end: string } {
