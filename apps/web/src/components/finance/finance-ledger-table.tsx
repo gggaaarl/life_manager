@@ -20,7 +20,9 @@ type Props = {
 };
 
 export function FinanceLedgerTable({ incomes, expenses }: Props) {
-  const rowCount = Math.max(incomes.length, expenses.length, 1);
+  const newestIncomes = [...incomes].reverse();
+  const newestExpenses = [...expenses].reverse();
+  const rowCount = Math.max(newestIncomes.length, newestExpenses.length, 1);
   const th =
     "border border-line bg-teal/10 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-ink";
   const td = "border border-line bg-panel px-3 py-2 text-sm";
@@ -37,8 +39,8 @@ export function FinanceLedgerTable({ incomes, expenses }: Props) {
         </thead>
         <tbody>
           {Array.from({ length: rowCount }, (_, index) => {
-            const income = incomes[index];
-            const expense = expenses[index];
+            const income = newestIncomes[index];
+            const expense = newestExpenses[index];
 
             return (
               <tr key={income?.id ?? expense?.id ?? index} className="even:bg-sand/30">

@@ -51,7 +51,6 @@ begin
     (v_user_id, v_job_id, '2026-08-23T18:30:00-05:00', 'in', 11.70, 'yape', 'driver_income', null, 'Carrera Yape', false),
     (v_user_id, v_job_id, '2026-08-23T19:05:00-05:00', 'in', 14.50, 'yape', 'driver_income', null, 'Carrera Yape', false),
     (v_user_id, v_job_id, '2026-08-23T19:40:00-05:00', 'in', 23.50, 'yape', 'driver_income', null, 'Carrera Yape', false),
-    (v_user_id, v_job_id, '2026-08-23T20:15:00-05:00', 'in', 10.50, 'yape', 'driver_income', null, 'Carrera Yape', false),
     (v_user_id, v_job_id, '2026-08-23T20:50:00-05:00', 'in', 21.50, 'yape', 'driver_income', null, 'Carrera Yape', false),
     -- Egresos saldo app
     (v_user_id, v_job_id, '2026-08-23T09:00:00-05:00', 'out',  5.70, 'yape', 'driver_expense', 'app_saldo', 'Saldo', false),
