@@ -76,34 +76,35 @@ export default async function NutritionPage() {
         showDriverMenu={showDriverMenu}
       />
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl bg-panel p-5 border border-line/60">
+            <p className="text-sm text-muted">Kcal hoy</p>
+            <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-teal">
+              {kcalToday}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-panel p-5 border border-line/60">
+            <p className="text-sm text-muted">Gasto comida hoy</p>
+            <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-ink">
+              {formatSoles(foodSpendToday)}
+            </p>
+          </div>
+        </div>
+
         <Link href="/home" className="text-sm font-medium text-teal">
           ← Hub
         </Link>
         <div className="mt-3 mb-6">
           <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
-            TRAINEE
+            NATURISTA
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-bold text-ink">
             Nutrición
           </h1>
         </div>
 
-        <div className="mb-6 space-y-4">
+        <div className="mb-6">
           <WalletBalances wallets={wallets ?? []} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl bg-panel p-5 border border-line/60">
-              <p className="text-sm text-muted">Kcal hoy</p>
-              <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-teal">
-                {kcalToday}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-panel p-5 border border-line/60">
-              <p className="text-sm text-muted">Gasto comida hoy</p>
-              <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-ink">
-                {formatSoles(foodSpendToday)}
-              </p>
-            </div>
-          </div>
         </div>
 
         <FoodLogForm foods={foods} />

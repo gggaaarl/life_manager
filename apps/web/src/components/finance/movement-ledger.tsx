@@ -88,8 +88,8 @@ function GnvBarBadge({ bar }: { bar: GnvBar }) {
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
         tone === "red"
-          ? "bg-red-950/60 text-red-300"
-          : "bg-emerald-950/60 text-emerald-300"
+          ? "bg-red-50 text-red-800"
+          : "bg-emerald-50 text-emerald-800"
       }`}
     >
       {GNV_BAR_LABELS[bar]}

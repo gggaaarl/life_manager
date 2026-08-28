@@ -50,7 +50,7 @@ export function AppHeader({
           href="/home"
           className="font-[family-name:var(--font-display)] text-xs font-bold tracking-[0.08em] text-mint sm:text-sm"
         >
-          NATURALEZA<span className="text-mint">CRUEL</span>
+          NATURALEZA<span className="text-teal">CRUEL</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -63,7 +63,7 @@ export function AppHeader({
                 href={link.href}
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                   active
-                    ? "bg-teal/15 text-mint"
+                    ? "bg-teal/15 text-teal"
                     : "text-muted hover:bg-panel-hover hover:text-ink"
                 }`}
               >
@@ -103,7 +103,7 @@ export function AppHeader({
                   key={link.href}
                   href={link.href}
                   className={`rounded-lg px-3 py-3 text-sm font-medium ${
-                    active ? "bg-teal/15 text-mint" : "text-ink"
+                    active ? "bg-teal/15 text-teal" : "text-ink"
                   }`}
                 >
                   {link.label}

@@ -14,8 +14,14 @@ export default async function LoginPage({ searchParams }: Props) {
         : undefined;
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-void text-ink">
-      <BioBackground />
+    <main className="relative min-h-dvh overflow-hidden bg-sand text-ink">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 15% 0%, rgba(163,177,138,0.12), transparent 55%), radial-gradient(ellipse 50% 40% at 90% 100%, rgba(125,145,104,0.08), transparent 50%)",
+        }}
+      />
 
       <div className="relative z-10 mx-auto grid min-h-dvh max-w-6xl lg:grid-cols-2 lg:gap-8">
         <section className="flex flex-col justify-center px-6 pb-4 pt-10 sm:px-10 lg:px-12 lg:py-12">
@@ -33,22 +39,10 @@ export default async function LoginPage({ searchParams }: Props) {
 function BrandMark() {
   return (
     <div className="max-w-md">
-      <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,8vw,3.75rem)] font-bold leading-[0.95] tracking-tight">
+      <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,8vw,3.75rem)] font-bold leading-[0.95] tracking-tight text-ink">
         NATURALEZA
-        <span className="block text-mint">CRUEL</span>
+        <span className="block text-teal">CRUEL</span>
       </h1>
     </div>
-  );
-}
-
-function BioBackground() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-0"
-      style={{
-        background:
-          "radial-gradient(ellipse 80% 60% at 20% 10%, rgba(125,145,104,0.14), transparent 50%), radial-gradient(ellipse 60% 50% at 85% 80%, rgba(163,177,138,0.06), transparent 45%), linear-gradient(180deg, #060806 0%, #0a0d08 40%, #060806 100%)",
-      }}
-    />
   );
 }

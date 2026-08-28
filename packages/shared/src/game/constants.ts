@@ -1,11 +1,14 @@
 export const MEDAL_CODES = {
   MANEJAR: "manejar",
+  ENTRENAR: "entrenar",
 } as const;
 
 export const JOB_CODES = {
   TRAINEE: "TRAINEE",
   DRIVER: "DRIVER",
   PLAYER: "PLAYER",
+  TRAINER: "TRAINER",
+  NATURISTA: "NATURISTA",
 } as const;
 
 export type JobCode = (typeof JOB_CODES)[keyof typeof JOB_CODES];

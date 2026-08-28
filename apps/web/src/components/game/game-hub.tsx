@@ -31,6 +31,24 @@ export function GameHub({ jobs, medals, unlockedMedalCodes }: Props) {
     <div className="space-y-8">
       <section>
         <p className="mb-3 font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
+          DASHBOARDS
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <DashLink href="/nutrition" title="Nutrición" subtitle="Kcal del día" />
+          <DashLink href="/finance" title="Finanzas" subtitle="Gastos e ingresos" />
+          {driverActive ? (
+            <DashLink href="/driver" title="Chofer" subtitle="Taxi y vehículo" />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-line bg-panel/60 p-5 opacity-70">
+              <p className="font-semibold text-ink">Chofer</p>
+              <p className="mt-1 text-sm text-muted">Desbloquea el job DRIVER</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section>
+        <p className="mb-3 font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
           MEDALLAS
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -39,8 +57,9 @@ export function GameHub({ jobs, medals, unlockedMedalCodes }: Props) {
               key={medal.code}
               medal={medal}
               onUnlock={
-                medal.code === MEDAL_CODES.MANEJAR && !medal.unlocked
-                  ? MEDAL_CODES.MANEJAR
+                !medal.unlocked &&
+                (medal.code === MEDAL_CODES.MANEJAR || medal.code === MEDAL_CODES.ENTRENAR)
+                  ? medal.code
                   : null
               }
             />
@@ -64,24 +83,6 @@ export function GameHub({ jobs, medals, unlockedMedalCodes }: Props) {
             Desbloquea la medalla Manejar para acceder al job Chofer.
           </p>
         ) : null}
-      </section>
-
-      <section>
-        <p className="mb-3 font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
-          DASHBOARDS
-        </p>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <DashLink href="/nutrition" title="Nutrición" subtitle="Kcal del día" />
-          <DashLink href="/finance" title="Finanzas" subtitle="Gastos e ingresos" />
-          {driverActive ? (
-            <DashLink href="/driver" title="Chofer" subtitle="Taxi y vehículo" />
-          ) : (
-            <div className="rounded-2xl border border-dashed border-line bg-panel/60 p-5 opacity-70">
-              <p className="font-semibold text-ink">Chofer</p>
-              <p className="mt-1 text-sm text-muted">Desbloquea el job DRIVER</p>
-            </div>
-          )}
-        </div>
       </section>
     </div>
   );
@@ -147,6 +148,11 @@ function JobCard({ job, driverActive }: { job: UserJobRow; driverActive?: boolea
         {job.name}
       </p>
       <p className="mt-2 text-sm text-muted">{status}</p>
+      {job.code === "NATURISTA" && (job.status === "active" || job.status === "unlocked") ? (
+        <Link href="/nutrition" className="mt-4 inline-flex text-sm font-semibold text-teal">
+          Abrir nutrición →
+        </Link>
+      ) : null}
       {job.code === "PLAYER" ? (
         <Link href="/player/citas" className="mt-4 inline-flex text-sm font-semibold text-teal">
           Abrir salidas →

@@ -15,15 +15,15 @@ import { signInWithGoogle, signOut } from "./lib/auth";
 import { supabase } from "./lib/supabase";
 
 const COLORS = {
-  void: "#060806",
-  sand: "#0a0d08",
-  panel: "#0e120c",
-  line: "#1e2419",
-  ink: "#e8ede4",
-  muted: "#8a9580",
-  sage: "#a3b18a",
-  sageDark: "#7d9168",
-  danger: "#e07a7a",
+  void: "#ffffff",
+  sand: "#f7f8f6",
+  panel: "#ffffff",
+  line: "#e2e6df",
+  ink: "#1a2419",
+  muted: "#6b7566",
+  sage: "#7d9168",
+  sageDark: "#6b7f59",
+  danger: "#b42318",
 };
 
 export default function App() {
@@ -108,7 +108,7 @@ export default function App() {
           </Pressable>
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
       </SafeAreaView>
     );
   }
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: COLORS.void,
+    color: "#ffffff",
     fontWeight: "700",
     fontSize: 16,
   },

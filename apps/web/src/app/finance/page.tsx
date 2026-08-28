@@ -70,6 +70,14 @@ export default async function FinancePage({ searchParams }: PageProps) {
     <main className="min-h-dvh bg-sand">
       <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        <div className="mb-6 grid grid-cols-2 gap-4">
+          <StatCard label="Ingresos" value={formatSoles(income)} tone="forest" />
+          <StatCard label="Gastos" value={formatSoles(expenses)} />
+        </div>
+        <div className="mb-6">
+          <StatCard label="Balance" value={formatSoles(income - expenses)} />
+        </div>
+
         <Link href="/home" className="text-sm font-medium text-teal">
           ← Hub
         </Link>
@@ -77,9 +85,6 @@ export default async function FinancePage({ searchParams }: PageProps) {
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold text-ink">
             Finanzas
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            Cada fila es un pago o cobro: Yape, efectivo, GNV, saldo app, comida…
-          </p>
         </div>
 
         <div className="mb-6">
@@ -91,17 +96,11 @@ export default async function FinancePage({ searchParams }: PageProps) {
           <OpeningBalanceForm hasOpeningBalance={(openingCount ?? 0) > 0} />
         </div>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
-          <StatCard label="Gastos" value={formatSoles(expenses)} />
-          <StatCard label="Ingresos" value={formatSoles(income)} tone="forest" />
-          <StatCard label="Balance" value={formatSoles(income - expenses)} />
-        </div>
-
         <div className="mb-6 rounded-2xl bg-panel p-5 border border-line/60">
           <p className="mb-3 font-medium text-ink">Ingresos por método</p>
           <div className="grid gap-2 sm:grid-cols-3">
             {(["yape", "plin", "efectivo"] as const).map((method) => (
-              <div key={method} className="rounded-xl bg-sand/50 px-3 py-2 text-sm">
+              <div key={method} className="rounded-xl bg-sand px-3 py-2 text-sm">
                 <p className="text-muted">{PAYMENT_METHOD_LABELS[method]}</p>
                 <p className="font-semibold text-ink">{formatSoles(byPayment[method])}</p>
               </div>
@@ -133,7 +132,7 @@ function StatCard({
     <div className="rounded-2xl bg-panel p-5 border border-line/60">
       <p className="text-sm text-muted">{label}</p>
       <p
-        className={`mt-1 font-[family-name:var(--font-display)] text-2xl font-bold ${
+        className={`mt-1 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl ${
           tone === "forest" ? "text-forest" : "text-ink"
         }`}
       >

@@ -113,29 +113,6 @@ export default async function DriverPage({ searchParams }: PageProps) {
     <main className="min-h-dvh bg-sand">
       <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu showDriverMenu />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        <Link href="/home" className="text-sm font-medium text-teal">
-          ← Hub
-        </Link>
-        <div className="mt-3 mb-6">
-          <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
-            DRIVER
-          </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-bold text-ink">
-            Chofer
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Control por vueltas, horas y barras GNV. Todo se refleja en Finanzas.
-          </p>
-        </div>
-
-        <div className="mb-6">
-          <DayPicker value={workDate} />
-        </div>
-
-        <div className="mb-6">
-          <WalletBalances wallets={wallets ?? []} />
-        </div>
-
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="Ingresos del día" value={formatSoles(income)} tone="forest" />
           <Stat label="Gastos del día" value={formatSoles(expenses)} />
@@ -148,6 +125,26 @@ export default async function DriverPage({ searchParams }: PageProps) {
                 : "—"
             }
           />
+        </div>
+
+        <Link href="/home" className="text-sm font-medium text-teal">
+          ← Hub
+        </Link>
+        <div className="mt-3 mb-6">
+          <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
+            DRIVER
+          </p>
+          <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-bold text-ink">
+            Chofer
+          </h1>
+        </div>
+
+        <div className="mb-6">
+          <DayPicker value={workDate} />
+        </div>
+
+        <div className="mb-6">
+          <WalletBalances wallets={wallets ?? []} />
         </div>
 
         {shiftRows.length > 0 ? (
@@ -176,7 +173,7 @@ export default async function DriverPage({ searchParams }: PageProps) {
               <div
                 key={bar}
                 className={`rounded-xl px-3 py-2 text-sm ${
-                  gnvBarTone(bar) === "red" ? "bg-red-950/50" : "bg-emerald-950/50"
+                  gnvBarTone(bar) === "red" ? "bg-red-50" : "bg-emerald-50"
                 }`}
               >
                 <p className="text-muted">{GNV_BAR_LABELS[bar]}</p>

@@ -66,7 +66,7 @@ export function LoginForm({ errorMessage }: Props) {
           placeholder="Dirección de email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="h-12 w-full rounded-xl border border-line bg-panel px-4 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal/60 focus:ring-1 focus:ring-teal/30"
+          className="h-12 w-full rounded-xl border border-line bg-panel px-4 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal focus:ring-1 focus:ring-teal/30"
         />
 
         <label className="sr-only" htmlFor="password">
@@ -80,20 +80,20 @@ export function LoginForm({ errorMessage }: Props) {
             placeholder="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="h-12 w-full rounded-xl border border-line bg-panel px-4 pr-12 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal/60 focus:ring-1 focus:ring-teal/30"
+            className="h-12 w-full rounded-xl border border-line bg-panel px-4 pr-11 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal focus:ring-1 focus:ring-teal/30"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute inset-y-0 right-0 px-3 text-sm text-muted"
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted hover:text-ink"
             aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
           >
-            {showPassword ? "Ocultar" : "Ver"}
+            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
           </button>
         </div>
 
         {error ? (
-          <p className="rounded-xl border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-[var(--lm-danger)]">
+          <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-[var(--lm-danger)]">
             {error}
           </p>
         ) : null}
@@ -101,7 +101,7 @@ export function LoginForm({ errorMessage }: Props) {
         <button
           type="submit"
           disabled={loading !== null}
-          className="mt-1 h-12 w-full rounded-xl bg-teal text-[15px] font-semibold text-void transition hover:bg-teal/90 disabled:opacity-60"
+          className="mt-1 h-12 w-full rounded-xl bg-teal text-[15px] font-semibold text-white transition hover:bg-teal/90 disabled:opacity-60"
         >
           {loading === "email" ? "Entrando…" : "Inicia sesión"}
         </button>
@@ -123,6 +123,26 @@ export function LoginForm({ errorMessage }: Props) {
         {loading === "google" ? "Redirigiendo…" : "Continuar con Google"}
       </button>
     </div>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-6.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <path d="m1 1 22 22" />
+    </svg>
   );
 }
 
