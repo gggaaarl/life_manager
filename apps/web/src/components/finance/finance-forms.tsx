@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { logManualExpense } from "@/app/finance/actions";
 import {
-  EXPENSE_CATEGORIES,
+  FINANCE_MANUAL_EXPENSE_CATEGORIES,
   EXPENSE_CATEGORY_LABELS,
 } from "@life-manager/shared/finance/constants";
 import { nowTimeInLima } from "@life-manager/shared/finance/summaries";
@@ -53,8 +53,8 @@ export function FinanceForms({
         placeholder="Monto"
         className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
       />
-      <select name="category" defaultValue="otro" className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm">
-        {EXPENSE_CATEGORIES.map((value) => (
+      <select name="category" defaultValue="comida" className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm">
+        {FINANCE_MANUAL_EXPENSE_CATEGORIES.map((value) => (
           <option key={value} value={value}>
             {EXPENSE_CATEGORY_LABELS[value]}
           </option>

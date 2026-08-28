@@ -4,13 +4,12 @@ import { DayBalanceCard } from "@/components/finance/day-balance-card";
 import { DriverForms } from "@/components/driver/driver-forms";
 import {
   buildExpenseItems,
-  buildJobGroups,
+  buildIncomeRows,
   JobBalanceSheet,
 } from "@/components/finance/job-balance-sheet";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
 import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 const DEFAULT_DRIVER_DATE = "2026-08-22";
@@ -98,16 +97,11 @@ export default async function DriverPage({ searchParams }: PageProps) {
 
         <div className="mt-6">
           <JobBalanceSheet
-            jobs={buildJobGroups(incomeRows)}
+            incomes={buildIncomeRows(incomeRows)}
             expenses={buildExpenseItems(expenseRows)}
-            amountColumnLabel="Monto"
-            singleJobLabel="taxi"
+            totalExpense={expenses}
           />
         </div>
-
-        <Link href="/home" className="mt-4 inline-block text-sm font-medium text-teal">
-          ← Hub
-        </Link>
 
         <div className="mt-6">
           <DriverForms workDate={workDate} shifts={shifts ?? []} />

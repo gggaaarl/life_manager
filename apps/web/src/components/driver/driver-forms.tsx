@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { logDriverExpense, logDriverIncome } from "@/app/finance/actions";
 import {
   DRIVER_EXPENSE_CATEGORIES,
-  EXPENSE_CATEGORY_LABELS,
+  DRIVER_EXPENSE_CATEGORY_LABELS,
   GNV_BARS,
   GNV_BAR_LABELS,
   gnvBarTone,
@@ -153,13 +153,13 @@ function DriverExpenseForm({
       <select required name="category" defaultValue="combustible_gnv" className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm">
         {DRIVER_EXPENSE_CATEGORIES.map((value) => (
           <option key={value} value={value}>
-            {EXPENSE_CATEGORY_LABELS[value]}
+            {DRIVER_EXPENSE_CATEGORY_LABELS[value]}
           </option>
         ))}
       </select>
       <input
         name="label"
-        placeholder="Ej. Recarga GNV, saldo Yango"
+        placeholder="Ej. Recarga GNV, saldo Yango, llantas"
         className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
       />
       <input

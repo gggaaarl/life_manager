@@ -708,6 +708,8 @@ export type Database = {
         | "mantenimiento"
         | "otro"
         | "app_saldo"
+        | "comida"
+        | "bebida"
       job_status: "locked" | "unlocked" | "active"
       movement_direction: "in" | "out"
       movement_source:
@@ -865,6 +867,8 @@ export const Constants = {
         "mantenimiento",
         "otro",
         "app_saldo",
+        "comida",
+        "bebida",
       ],
       job_status: ["locked", "unlocked", "active"],
       movement_direction: ["in", "out"],

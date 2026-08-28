@@ -9,6 +9,7 @@ import {
   type GnvBar,
   type PaymentMethod,
   GNV_BARS,
+  DRIVER_EXPENSE_CATEGORY_LABELS,
   EXPENSE_CATEGORY_LABELS,
 } from "@life-manager/shared/finance/constants";
 import { computeFoodLogValues } from "@life-manager/shared/finance/food";
@@ -364,11 +365,9 @@ export async function logDriverExpense(formData: FormData) {
   let label = String(formData.get("label") ?? "").trim();
   if (!label) {
     label =
-      category === "app_saldo"
-        ? "Recarga saldo app"
-        : category === "combustible_gnv"
-          ? "Recarga GNV"
-          : EXPENSE_CATEGORY_LABELS[category];
+      category in DRIVER_EXPENSE_CATEGORY_LABELS
+        ? DRIVER_EXPENSE_CATEGORY_LABELS[category as keyof typeof DRIVER_EXPENSE_CATEGORY_LABELS]
+        : EXPENSE_CATEGORY_LABELS[category];
   }
 
   const jobId = await getDriverJobId(supabase);

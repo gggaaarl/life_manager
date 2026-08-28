@@ -3,7 +3,7 @@ import { DayBalanceCard } from "@/components/finance/day-balance-card";
 import { FinanceForms } from "@/components/finance/finance-forms";
 import {
   buildExpenseItems,
-  buildJobGroups,
+  buildIncomeRows,
   JobBalanceSheet,
 } from "@/components/finance/job-balance-sheet";
 import { WalletBalances } from "@/components/finance/wallet-balances";
@@ -12,7 +12,6 @@ import { DayPicker } from "@/components/driver/day-picker";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
 import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 /** Día con data histórica cargada (sáb 22-ago-2026). */
@@ -90,14 +89,11 @@ export default async function FinancePage({ searchParams }: PageProps) {
 
         <div className="mt-6">
           <JobBalanceSheet
-            jobs={buildJobGroups(incomeRows)}
+            incomes={buildIncomeRows(incomeRows)}
             expenses={buildExpenseItems(expenseRows)}
+            totalExpense={expenses}
           />
         </div>
-
-        <Link href="/home" className="mt-4 inline-block text-sm font-medium text-teal">
-          ← Hub
-        </Link>
 
         <div className="mt-6">
           <FinanceForms workDate={workDate} paymentAccounts={activeAccounts} />

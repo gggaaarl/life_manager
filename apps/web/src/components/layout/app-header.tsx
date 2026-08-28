@@ -5,6 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+type NavLink = {
+  href: string;
+  label: string;
+  exact?: boolean;
+};
+
 type Props = {
   showPlayerMenu?: boolean;
   showNutritionMenu?: boolean;
@@ -35,13 +41,13 @@ export function AppHeader({
     router.refresh();
   }
 
-  const links = [
+  const links: NavLink[] = [
     { href: "/home", label: "Hub" },
     ...(showNutritionMenu ? [{ href: "/nutrition", label: "Nutrición" }] : []),
     ...(showFinanceMenu
       ? [
-          { href: "/finance", label: "Finanzas" },
-          { href: "/finance/configuracion", label: "Config. finanzas" },
+          { href: "/finance", label: "Finanzas", exact: true },
+          { href: "/finance/configuracion", label: "Configuración de finanzas" },
         ]
       : []),
     ...(showDriverMenu ? [{ href: "/driver", label: "Chofer" }] : []),
@@ -58,15 +64,16 @@ export function AppHeader({
           NATURALEZA<span className="text-teal">CRUEL</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden flex-wrap items-center justify-end gap-1 md:flex lg:flex-nowrap">
           {links.map((link) => {
-            const active =
-              pathname === link.href || pathname.startsWith(`${link.href}/`);
+            const active = link.exact
+              ? pathname === link.href
+              : pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`rounded-lg px-2.5 py-2 text-xs font-medium transition lg:px-3 lg:text-sm ${
                   active
                     ? "bg-teal/15 text-teal"
                     : "text-muted hover:bg-panel-hover hover:text-ink"
@@ -101,8 +108,9 @@ export function AppHeader({
         <div className="border-t border-line bg-panel md:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col px-4 py-3 sm:px-6">
             {links.map((link) => {
-              const active =
-                pathname === link.href || pathname.startsWith(`${link.href}/`);
+              const active = link.exact
+                ? pathname === link.href
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
                 <Link
                   key={link.href}

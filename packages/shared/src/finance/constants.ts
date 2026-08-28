@@ -8,6 +8,8 @@ export const MOVEMENT_SOURCES = [
   "driver_expense",
 ] as const;
 export const EXPENSE_CATEGORIES = [
+  "comida",
+  "bebida",
   "comida_bebida",
   "combustible_gnv",
   "combustible_gasolina",
@@ -16,6 +18,17 @@ export const EXPENSE_CATEGORIES = [
   "mantenimiento",
   "otro",
 ] as const;
+
+/** Gastos manuales en dashboard Finanzas. */
+export const FINANCE_MANUAL_EXPENSE_CATEGORIES = ["comida", "bebida", "otro"] as const satisfies readonly ExpenseCategory[];
+
+/** Gastos en dashboard Chofer / taxi. */
+export const DRIVER_EXPENSE_CATEGORIES = [
+  "combustible_gnv",
+  "combustible_gasolina",
+  "llantas",
+  "app_saldo",
+] as const satisfies readonly ExpenseCategory[];
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export type MovementDirection = (typeof MOVEMENT_DIRECTIONS)[number];
@@ -30,10 +43,12 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 };
 
 export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  comida: "Comida",
+  bebida: "Bebida",
   comida_bebida: "Comida / bebida",
   combustible_gnv: "GNV",
   combustible_gasolina: "Gasolina",
-  app_saldo: "Saldo app (Yango)",
+  app_saldo: "Saldo",
   llantas: "Llantas",
   mantenimiento: "Mantenimiento",
   otro: "Otro",
@@ -55,14 +70,16 @@ export function gnvBarTone(bar: GnvBar): "green" | "red" {
   return bar === 1 ? "red" : "green";
 }
 
-export const DRIVER_EXPENSE_CATEGORIES = [
-  "combustible_gnv",
-  "app_saldo",
-  "combustible_gasolina",
-  "llantas",
-  "mantenimiento",
-  "otro",
-] as const satisfies readonly ExpenseCategory[];
+
+export const DRIVER_EXPENSE_CATEGORY_LABELS: Record<
+  (typeof DRIVER_EXPENSE_CATEGORIES)[number],
+  string
+> = {
+  combustible_gnv: "GNV",
+  combustible_gasolina: "Gasolina",
+  llantas: "Llantas",
+  app_saldo: "Saldo",
+};
 
 export function todayUtcRange(): { start: string; end: string } {
   const now = new Date();
