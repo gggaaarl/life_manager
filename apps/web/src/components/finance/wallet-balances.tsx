@@ -1,4 +1,5 @@
 import { formatSoles } from "@life-manager/shared/finance/constants";
+import { sortPaymentAccountsForDisplay } from "@/components/finance/sort-payment-accounts";
 
 export type PaymentAccountRow = {
   id: string;
@@ -10,7 +11,7 @@ export type PaymentAccountRow = {
 };
 
 export function WalletBalances({ accounts }: { accounts: PaymentAccountRow[] }) {
-  const active = accounts.filter((row) => row.is_active).sort((a, b) => a.sort_order - b.sort_order);
+  const active = sortPaymentAccountsForDisplay(accounts);
   const total = active.reduce((sum, row) => sum + Number(row.balance_soles), 0);
 
   return (

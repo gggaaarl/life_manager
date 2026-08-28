@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { DayPicker } from "@/components/driver/day-picker";
+import { DayBalanceCard } from "@/components/finance/day-balance-card";
 import { DriverForms } from "@/components/driver/driver-forms";
 import {
   buildExpenseItems,
@@ -7,13 +8,12 @@ import {
   JobBalanceSheet,
 } from "@/components/finance/job-balance-sheet";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
-import {
-  dayRangeInLima,
-  todayInLima,
-} from "@life-manager/shared/finance/summaries";
+import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+const DEFAULT_DRIVER_DATE = "2026-08-22";
 
 type PageProps = {
   searchParams: Promise<{ date?: string }>;
@@ -21,7 +21,7 @@ type PageProps = {
 
 export default async function DriverPage({ searchParams }: PageProps) {
   const { date: dateParam } = await searchParams;
-  const workDate = dateParam ?? todayInLima();
+  const workDate = dateParam ?? DEFAULT_DRIVER_DATE;
   const { start, end } = dayRangeInLima(workDate);
 
   const supabase = await createClient();
@@ -86,17 +86,23 @@ export default async function DriverPage({ searchParams }: PageProps) {
     <main className="min-h-dvh bg-sand">
       <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu showDriverMenu />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        <JobBalanceSheet
-          totalIncome={income}
-          totalExpense={expenses}
-          jobs={buildJobGroups(incomeRows)}
-          expenses={buildExpenseItems(expenseRows)}
-          balanceLabel="GANANCIA DÍA"
-          singleJobLabel="taxi"
-        />
+        <DayPicker value={workDate} />
+
+        <div className="mt-4">
+          <DayBalanceCard
+            totalIncome={income}
+            totalExpense={expenses}
+            title="Ganancia del día"
+          />
+        </div>
 
         <div className="mt-6">
-          <DayPicker value={workDate} />
+          <JobBalanceSheet
+            jobs={buildJobGroups(incomeRows)}
+            expenses={buildExpenseItems(expenseRows)}
+            amountColumnLabel="Monto"
+            singleJobLabel="taxi"
+          />
         </div>
 
         <Link href="/home" className="mt-4 inline-block text-sm font-medium text-teal">

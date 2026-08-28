@@ -10,33 +10,46 @@ export type AccountOption = {
   is_active: boolean;
 };
 
-export function PaymentAccountsSettings({ accounts }: { accounts: AccountOption[] }) {
-  const [open, setOpen] = useState(false);
+export function PaymentAccountsSettings({
+  accounts,
+  alwaysOpen = false,
+}: {
+  accounts: AccountOption[];
+  alwaysOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(alwaysOpen);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const isOpen = alwaysOpen || open;
 
   return (
     <div className="rounded-xl border border-line bg-panel p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
+      {!alwaysOpen ? (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-ink">Mis cuentas</p>
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            className="text-sm font-medium text-teal"
+          >
+            {open ? "Cerrar" : "Editar cuentas"}
+          </button>
+        </div>
+      ) : (
         <p className="text-sm font-semibold text-ink">Mis cuentas</p>
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          className="text-sm font-medium text-teal"
-        >
-          {open ? "Cerrar" : "Editar cuentas"}
-        </button>
-      </div>
+      )}
 
-      {open ? (
+      {isOpen ? (
         <form
-          className="mt-4 space-y-3 border-t border-line pt-4"
+          className={`space-y-3 ${alwaysOpen ? "mt-4" : "mt-4 border-t border-line pt-4"}`}
           action={(formData) => {
             setError(null);
             startTransition(async () => {
               try {
                 await upsertPaymentAccount(formData);
-                setOpen(false);
+                if (!alwaysOpen) {
+                  setOpen(false);
+                }
               } catch (err) {
                 setError(err instanceof Error ? err.message : "Error.");
               }

@@ -460,5 +460,6 @@ export async function upsertPaymentAccount(formData: FormData) {
   }
 
   revalidatePath("/finance");
+  revalidatePath("/finance/configuracion");
   revalidatePath("/nutrition");
 }

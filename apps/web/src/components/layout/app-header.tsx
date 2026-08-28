@@ -38,7 +38,12 @@ export function AppHeader({
   const links = [
     { href: "/home", label: "Hub" },
     ...(showNutritionMenu ? [{ href: "/nutrition", label: "Nutrición" }] : []),
-    ...(showFinanceMenu ? [{ href: "/finance", label: "Finanzas" }] : []),
+    ...(showFinanceMenu
+      ? [
+          { href: "/finance", label: "Finanzas" },
+          { href: "/finance/configuracion", label: "Config. finanzas" },
+        ]
+      : []),
     ...(showDriverMenu ? [{ href: "/driver", label: "Chofer" }] : []),
     ...(showPlayerMenu ? [{ href: "/player/citas", label: "Salidas" }] : []),
   ];

@@ -22,24 +22,18 @@ function formatCellAmount(amount: number): string {
 }
 
 type Props = {
-  totalIncome: number;
-  totalExpense: number;
   jobs: SheetJobGroup[];
   expenses: SheetExpenseItem[];
-  balanceLabel?: string;
+  amountColumnLabel?: string;
   singleJobLabel?: string;
 };
 
 export function JobBalanceSheet({
-  totalIncome,
-  totalExpense,
   jobs,
   expenses,
-  balanceLabel = "BALANCE",
+  amountColumnLabel = "Balance",
   singleJobLabel,
 }: Props) {
-  const balance = totalIncome - totalExpense;
-
   type LeftRow =
     | { kind: "summary"; description: string; paymentLine: string }
     | { kind: "amount"; description: string; amount: string };
@@ -73,19 +67,7 @@ export function JobBalanceSheet({
             <th className={th}>Descripción</th>
             <th className={th}>Ingresos</th>
             <th className={th}>Egresos</th>
-            <th className={th}>{balanceLabel}</th>
-          </tr>
-          <tr className="bg-sand/80">
-            <th className={`${td} text-left font-medium text-muted`}>Resumen del día</th>
-            <th className={`${td} text-right tabular-nums font-semibold text-forest`}>
-              {formatCellAmount(totalIncome)}
-            </th>
-            <th className={`${td} text-right tabular-nums font-semibold`}>
-              {formatCellAmount(totalExpense)}
-            </th>
-            <th className={`${td} text-right tabular-nums font-semibold`}>
-              {formatCellAmount(balance)}
-            </th>
+            <th className={th}>{amountColumnLabel}</th>
           </tr>
         </thead>
         <tbody>

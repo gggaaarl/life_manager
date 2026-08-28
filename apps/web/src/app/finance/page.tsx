@@ -1,21 +1,22 @@
 import { AppHeader } from "@/components/layout/app-header";
+import { DayBalanceCard } from "@/components/finance/day-balance-card";
 import { FinanceForms } from "@/components/finance/finance-forms";
 import {
   buildExpenseItems,
   buildJobGroups,
   JobBalanceSheet,
 } from "@/components/finance/job-balance-sheet";
-import { PaymentAccountsSettings } from "@/components/finance/payment-accounts-settings";
 import { WalletBalances } from "@/components/finance/wallet-balances";
+import { sortPaymentAccountsForDisplay } from "@/components/finance/sort-payment-accounts";
 import { DayPicker } from "@/components/driver/day-picker";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
-import {
-  dayRangeInLima,
-  todayInLima,
-} from "@life-manager/shared/finance/summaries";
+import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+/** Día con data histórica cargada (sáb 22-ago-2026). */
+const DEFAULT_FINANCE_DATE = "2026-08-22";
 
 type PageProps = {
   searchParams: Promise<{ date?: string }>;
@@ -23,7 +24,7 @@ type PageProps = {
 
 export default async function FinancePage({ searchParams }: PageProps) {
   const { date: dateParam } = await searchParams;
-  const workDate = dateParam ?? todayInLima();
+  const workDate = dateParam ?? DEFAULT_FINANCE_DATE;
   const { start, end } = dayRangeInLima(workDate);
 
   const supabase = await createClient();
@@ -54,7 +55,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
       .order("sort_order"),
   ]);
 
-  const rows = movements ?? [];
+  const rows = (movements ?? []).filter((row) => row.source !== "opening_balance");
   const incomeRows = rows.filter((row) => row.direction === "in");
   const expenseRows = rows.filter((row) => row.direction === "out");
   const income = incomeRows.reduce((t, r) => t + Number(r.amount_soles), 0);
@@ -74,7 +75,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
     };
   });
 
-  const activeAccounts = accounts.filter((row) => row.is_active);
+  const activeAccounts = sortPaymentAccountsForDisplay(accounts);
 
   return (
     <main className="min-h-dvh bg-sand">
@@ -84,13 +85,11 @@ export default async function FinancePage({ searchParams }: PageProps) {
 
         <div className="mt-4 space-y-4">
           <WalletBalances accounts={accounts} />
-          <PaymentAccountsSettings accounts={accounts} />
+          <DayBalanceCard totalIncome={income} totalExpense={expenses} />
         </div>
 
         <div className="mt-6">
           <JobBalanceSheet
-            totalIncome={income}
-            totalExpense={expenses}
             jobs={buildJobGroups(incomeRows)}
             expenses={buildExpenseItems(expenseRows)}
           />
