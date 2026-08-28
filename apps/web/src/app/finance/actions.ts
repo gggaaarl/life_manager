@@ -463,6 +463,65 @@ export async function upsertPaymentAccount(formData: FormData) {
   revalidatePath("/nutrition");
 }
 
+export async function updateMovement(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const movementId = String(formData.get("movement_id") ?? "").trim();
+  const label = String(formData.get("label") ?? "").trim();
+  if (!movementId || !label) {
+    throw new Error("Datos incompletos.");
+  }
+
+  const amount = parseAmount(formData.get("amount_soles"));
+  const categoryRaw = String(formData.get("category") ?? "").trim();
+  const patch: {
+    label: string;
+    amount_soles: number;
+    category?: ExpenseCategory;
+  } = { label, amount_soles: amount };
+
+  if (categoryRaw) {
+    if (categoryRaw !== "comida" && categoryRaw !== "bebida") {
+      throw new Error("Categoría inválida.");
+    }
+    patch.category = categoryRaw as ExpenseCategory;
+  }
+
+  const { error } = await supabase
+    .from("finance_movements")
+    .update(patch)
+    .eq("id", movementId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/finance");
+  revalidatePath("/driver");
+  revalidatePath("/nutrition");
+}
+
+export async function deleteMovement(movementId: string) {
+  const { supabase, user } = await requireUser();
+  if (!movementId) {
+    throw new Error("Movimiento inválido.");
+  }
+
+  const { error } = await supabase
+    .from("finance_movements")
+    .delete()
+    .eq("id", movementId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/finance");
+  revalidatePath("/driver");
+  revalidatePath("/nutrition");
+}
+
 export async function updateExpenseCategory(movementId: string, category: ExpenseCategory) {
   const { supabase, user } = await requireUser();
 

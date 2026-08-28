@@ -124,9 +124,18 @@ export function buildFinanceExpenseRows(expenses: LedgerMovement[]): SheetExpens
   }));
 }
 
-export function buildFinanceIncomeRows(incomes: LedgerMovement[]): { description: string; amount: number }[] {
+export type SheetIncomeRow = {
+  id: string;
+  description: string;
+  editLabel: string;
+  amount: number;
+};
+
+export function buildFinanceIncomeRows(incomes: LedgerMovement[]): SheetIncomeRow[] {
   return incomes.map((row) => ({
+    id: row.id,
     description: incomeDescriptionForFinance(row),
+    editLabel: row.label?.trim() || incomeDescriptionForFinance(row),
     amount: Number(row.amount_soles),
   }));
 }

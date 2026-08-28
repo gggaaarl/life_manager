@@ -85,7 +85,6 @@ function EditableAccountCell({
       <div className="rounded-lg border border-teal/30 bg-teal/5 px-3 py-2">
         <p className="text-xs text-muted">{label}</p>
         <p className="text-base font-semibold tabular-nums text-teal">{formatSoles(value)}</p>
-        <p className="mt-0.5 text-[10px] text-muted">Resto en efectivo</p>
       </div>
     );
   }
@@ -99,7 +98,6 @@ function EditableAccountCell({
       >
         <p className="text-xs text-muted">{label}</p>
         <p className="text-base font-semibold tabular-nums text-ink">{formatSoles(value)}</p>
-        <p className="mt-0.5 text-[10px] text-teal">Clic para editar</p>
       </button>
     );
   }

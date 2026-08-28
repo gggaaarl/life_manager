@@ -7,12 +7,8 @@ import {
   EXPENSE_CATEGORY_LABELS,
   type ExpenseCategory,
 } from "@life-manager/shared/finance/constants";
-import type { SheetExpenseRow } from "@life-manager/shared/finance/ledger";
-
-export type SheetIncomeRow = {
-  description: string;
-  amount: number;
-};
+import { MovementRowActions } from "@/components/finance/movement-row-actions";
+import type { SheetExpenseRow, SheetIncomeRow } from "@life-manager/shared/finance/ledger";
 
 function formatCellAmount(amount: number): string {
   return amount.toFixed(1).replace(".", ",");
@@ -45,21 +41,32 @@ export function FinanceLedgerTable({ incomes, expenses }: Props) {
             const expense = expenses[index];
 
             return (
-              <tr key={index} className="even:bg-sand/30">
+              <tr key={income?.id ?? expense?.id ?? index} className="even:bg-sand/30">
                 <td className={`${td} align-top`}>{income?.description ?? ""}</td>
-                <td className={`${td} text-right tabular-nums align-top`}>
-                  {income ? formatCellAmount(income.amount) : ""}
+                <td className={`${td} align-top`}>
+                  {income ? <IncomeCell income={income} /> : null}
                 </td>
                 <td className={`${td} align-top`}>
-                  {expense ? (
-                    <ExpenseCell expense={expense} />
-                  ) : null}
+                  {expense ? <ExpenseCell expense={expense} /> : null}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function IncomeCell({ income }: { income: SheetIncomeRow }) {
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <span className="tabular-nums font-medium">{formatCellAmount(income.amount)}</span>
+      <MovementRowActions
+        movementId={income.id}
+        label={income.editLabel}
+        amount={income.amount}
+      />
     </div>
   );
 }
@@ -77,9 +84,18 @@ function ExpenseCell({ expense }: { expense: SheetExpenseRow }) {
       : null;
 
   return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-      <span className="text-ink">{expense.label}</span>
-      <div className="flex items-center gap-2 sm:justify-end">
+    <div className="flex flex-col gap-1">
+      <div className="flex items-start justify-between gap-1">
+        <span className="min-w-0 flex-1 text-ink">{expense.label}</span>
+        <MovementRowActions
+          movementId={expense.id}
+          label={expense.label}
+          amount={expense.amount}
+          editableCategory={expense.editableCategory}
+          category={expense.category}
+        />
+      </div>
+      <div className="flex items-center justify-end gap-2">
         {expense.editableCategory ? (
           <select
             disabled={pending}
