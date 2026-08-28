@@ -1,36 +1,35 @@
-import {
-  formatSoles,
-  PAYMENT_METHOD_LABELS,
-  type PaymentMethod,
-} from "@life-manager/shared/finance/constants";
+import { formatSoles } from "@life-manager/shared/finance/constants";
 
-type WalletRow = {
-  payment_method: PaymentMethod;
+export type PaymentAccountRow = {
+  id: string;
+  label: string;
+  slug: string;
+  sort_order: number;
+  is_active: boolean;
   balance_soles: number;
 };
 
-export function WalletBalances({ wallets }: { wallets: WalletRow[] }) {
-  const methods: PaymentMethod[] = ["yape", "plin", "efectivo"];
-  const byMethod = new Map(wallets.map((row) => [row.payment_method, row.balance_soles]));
-  const total = methods.reduce((sum, method) => sum + Number(byMethod.get(method) ?? 0), 0);
+export function WalletBalances({ accounts }: { accounts: PaymentAccountRow[] }) {
+  const active = accounts.filter((row) => row.is_active).sort((a, b) => a.sort_order - b.sort_order);
+  const total = active.reduce((sum, row) => sum + Number(row.balance_soles), 0);
 
   return (
-    <div className="rounded-2xl bg-panel p-5 border border-line/60">
+    <div className="rounded-xl border border-line bg-panel p-4 shadow-sm">
       <div className="mb-3 flex items-end justify-between gap-3">
-        <div>
-          <p className="font-medium text-ink">Tus billeteras</p>
-          <p className="text-sm text-muted">Saldo actual por método de pago</p>
-        </div>
-        <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-teal">
+        <p className="text-sm font-semibold text-ink">Balance actual</p>
+        <p className="font-[family-name:var(--font-display)] text-xl font-bold text-teal tabular-nums">
           {formatSoles(total)}
         </p>
       </div>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {methods.map((method) => (
-          <div key={method} className="rounded-xl bg-sand/50 px-3 py-2">
-            <p className="text-xs text-muted">{PAYMENT_METHOD_LABELS[method]}</p>
-            <p className="text-lg font-semibold text-ink">
-              {formatSoles(Number(byMethod.get(method) ?? 0))}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {active.map((account) => (
+          <div
+            key={account.id}
+            className="rounded-lg border border-line bg-sand/50 px-3 py-2"
+          >
+            <p className="text-xs text-muted">{account.label}</p>
+            <p className="text-base font-semibold tabular-nums text-ink">
+              {formatSoles(Number(account.balance_soles))}
             </p>
           </div>
         ))}

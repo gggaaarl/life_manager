@@ -87,7 +87,6 @@ export default async function DriverPage({ searchParams }: PageProps) {
       <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu showDriverMenu />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
         <JobBalanceSheet
-          workDate={workDate}
           totalIncome={income}
           totalExpense={expenses}
           jobs={buildJobGroups(incomeRows)}

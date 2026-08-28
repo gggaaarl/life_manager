@@ -22,7 +22,7 @@ export default async function NutritionPage() {
   const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
   const { start, end } = todayUtcRange();
 
-  const [{ data: foodsRaw }, { data: movements }, { data: wallets }] = await Promise.all([
+  const [{ data: foodsRaw }, { data: movements }, { data: paymentAccounts }] = await Promise.all([
     supabase
       .from("food_items")
       .select(
@@ -40,9 +40,10 @@ export default async function NutritionPage() {
       .not("kcal", "is", null)
       .order("occurred_at", { ascending: false }),
     supabase
-      .from("user_wallet_balances")
-      .select("payment_method, balance_soles")
-      .eq("user_id", user.id),
+      .from("user_payment_accounts")
+      .select("id, slug, label, sort_order, is_active, user_account_balances(balance_soles)")
+      .eq("user_id", user.id)
+      .order("sort_order"),
   ]);
 
   const foods = (foodsRaw ?? []) as FoodItemRow[];
@@ -104,7 +105,21 @@ export default async function NutritionPage() {
         </div>
 
         <div className="mb-6">
-          <WalletBalances wallets={wallets ?? []} />
+          <WalletBalances
+            accounts={(paymentAccounts ?? []).map((row) => {
+              const balanceRow = Array.isArray(row.user_account_balances)
+                ? row.user_account_balances[0]
+                : row.user_account_balances;
+              return {
+                id: row.id,
+                slug: row.slug,
+                label: row.label,
+                sort_order: row.sort_order,
+                is_active: row.is_active,
+                balance_soles: Number(balanceRow?.balance_soles ?? 0),
+              };
+            })}
+          />
         </div>
 
         <FoodLogForm foods={foods} />

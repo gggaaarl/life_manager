@@ -43,6 +43,11 @@ function parseKcal(value: FormDataEntryValue | null): number {
   return parsed;
 }
 
+function parsePaymentAccountId(value: FormDataEntryValue | null): string | null {
+  const text = String(value ?? "").trim();
+  return text || null;
+}
+
 function parsePaymentMethod(value: FormDataEntryValue | null): PaymentMethod | null {
   const text = String(value ?? "").trim();
   if (!text) {
@@ -194,12 +199,15 @@ export async function logManualExpense(formData: FormData) {
     throw new Error("Descripción obligatoria.");
   }
 
+  const paymentAccountId = parsePaymentAccountId(formData.get("payment_account_id"));
+
   const { error } = await supabase.from("finance_movements").insert({
     user_id: user.id,
     occurred_at: parseOccurredAt(formData),
     direction: "out",
     amount_soles: parseAmount(formData.get("amount_soles")),
     payment_method: parsePaymentMethod(formData.get("payment_method")),
+    payment_account_id: paymentAccountId,
     source: "expense",
     category: parseCategory(formData.get("category")) ?? "otro",
     label,
@@ -385,4 +393,72 @@ export async function logDriverExpense(formData: FormData) {
 
   revalidatePath("/driver");
   revalidatePath("/finance");
+}
+
+export async function upsertPaymentAccount(formData: FormData) {
+  const { supabase, user } = await requireUser();
+
+  const activeIds = new Set(
+    formData.getAll("active_ids").map((value) => String(value)),
+  );
+
+  const { data: accounts, error: listError } = await supabase
+    .from("user_payment_accounts")
+    .select("id, sort_order")
+    .eq("user_id", user.id);
+
+  if (listError) {
+    throw new Error(listError.message);
+  }
+
+  for (const account of accounts ?? []) {
+    const isActive = activeIds.has(account.id);
+    const { error } = await supabase
+      .from("user_payment_accounts")
+      .update({ is_active: isActive })
+      .eq("id", account.id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  const slug = String(formData.get("slug") ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  const label = String(formData.get("label") ?? "").trim();
+
+  if (slug && label) {
+    const maxOrder = Math.max(0, ...(accounts ?? []).map((row) => row.sort_order)) + 1;
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("user_payment_accounts")
+      .insert({
+        user_id: user.id,
+        slug,
+        label,
+        sort_order: maxOrder,
+        is_active: true,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+
+    if (inserted) {
+      await supabase.from("user_account_balances").upsert({
+        user_id: user.id,
+        payment_account_id: inserted.id,
+        balance_soles: 0,
+      });
+    }
+  }
+
+  revalidatePath("/finance");
+  revalidatePath("/nutrition");
 }

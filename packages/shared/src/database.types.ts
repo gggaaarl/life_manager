@@ -109,6 +109,7 @@ export type Database = {
           label: string
           notes: string | null
           occurred_at: string
+          payment_account_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           source: Database["public"]["Enums"]["movement_source"]
           updated_at: string
@@ -129,6 +130,7 @@ export type Database = {
           label: string
           notes?: string | null
           occurred_at?: string
+          payment_account_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           source: Database["public"]["Enums"]["movement_source"]
           updated_at?: string
@@ -149,6 +151,7 @@ export type Database = {
           label?: string
           notes?: string | null
           occurred_at?: string
+          payment_account_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           source?: Database["public"]["Enums"]["movement_source"]
           updated_at?: string
@@ -174,6 +177,13 @@ export type Database = {
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_movements_payment_account_id_fkey"
+            columns: ["payment_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_payment_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -495,6 +505,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_account_balances: {
+        Row: {
+          balance_soles: number
+          payment_account_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_soles?: number
+          payment_account_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_soles?: number
+          payment_account_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_account_balances_payment_account_id_fkey"
+            columns: ["payment_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_payment_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_account_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_jobs: {
         Row: {
           activated_at: string | null
@@ -572,6 +618,44 @@ export type Database = {
           },
           {
             foreignKeyName: "user_medals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_payment_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          slug: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          slug: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          slug?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_payment_accounts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
