@@ -39,60 +39,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      driver_shifts: {
-        Row: {
-          break_minutes: number
-          created_at: string
-          ended_at: string | null
-          id: string
-          job_id: string
-          notes: string | null
-          shift_number: number
-          started_at: string
-          user_id: string
-          work_date: string
-        }
-        Insert: {
-          break_minutes?: number
-          created_at?: string
-          ended_at?: string | null
-          id?: string
-          job_id: string
-          notes?: string | null
-          shift_number: number
-          started_at: string
-          user_id: string
-          work_date: string
-        }
-        Update: {
-          break_minutes?: number
-          created_at?: string
-          ended_at?: string | null
-          id?: string
-          job_id?: string
-          notes?: string | null
-          shift_number?: number
-          started_at?: string
-          user_id?: string
-          work_date?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "driver_shifts_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "driver_shifts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       finance_movements: {
         Row: {
           affects_wallet: boolean
@@ -100,9 +46,7 @@ export type Database = {
           category: Database["public"]["Enums"]["expense_category"] | null
           created_at: string
           direction: Database["public"]["Enums"]["movement_direction"]
-          driver_shift_id: string | null
           food_item_id: string | null
-          gnv_bar: number | null
           id: string
           job_id: string | null
           kcal: number | null
@@ -121,9 +65,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["expense_category"] | null
           created_at?: string
           direction: Database["public"]["Enums"]["movement_direction"]
-          driver_shift_id?: string | null
           food_item_id?: string | null
-          gnv_bar?: number | null
           id?: string
           job_id?: string | null
           kcal?: number | null
@@ -142,9 +84,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["expense_category"] | null
           created_at?: string
           direction?: Database["public"]["Enums"]["movement_direction"]
-          driver_shift_id?: string | null
           food_item_id?: string | null
-          gnv_bar?: number | null
           id?: string
           job_id?: string | null
           kcal?: number | null
@@ -158,13 +98,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "finance_movements_driver_shift_id_fkey"
-            columns: ["driver_shift_id"]
-            isOneToOne: false
-            referencedRelation: "driver_shifts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "finance_movements_food_item_id_fkey"
             columns: ["food_item_id"]

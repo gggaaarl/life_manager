@@ -1,215 +1,216 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { logDriverExpense, logDriverIncome } from "@/app/finance/actions";
 import {
   DRIVER_EXPENSE_CATEGORIES,
   DRIVER_EXPENSE_CATEGORY_LABELS,
-  GNV_BARS,
-  GNV_BAR_LABELS,
-  gnvBarTone,
-  PAYMENT_METHODS,
-  PAYMENT_METHOD_LABELS,
+  type ExpenseCategory,
 } from "@life-manager/shared/finance/constants";
-import { nowTimeInLima } from "@life-manager/shared/finance/summaries";
-import type { DriverShiftRow } from "@life-manager/shared/finance/summaries";
 
-type Props = {
-  workDate: string;
-  shifts: DriverShiftRow[];
-};
-
-export function DriverForms({ workDate, shifts }: Props) {
+export function DriverForms() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <DriverIncomeForm workDate={workDate} shifts={shifts} />
-      <DriverExpenseForm workDate={workDate} shifts={shifts} />
+      <DriverIncomeForm />
+      <DriverExpenseForm />
     </div>
   );
 }
 
-function DriverIncomeForm({
-  workDate,
-  shifts,
-}: {
-  workDate: string;
-  shifts: DriverShiftRow[];
-}) {
+function DriverIncomeForm() {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const defaultShift = shifts.find((s) => !s.ended_at)?.id ?? shifts.at(-1)?.id ?? "";
+
+  function submit(paymentMethod: "yape" | "efectivo") {
+    const form = formRef.current;
+    if (!form) return;
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      setError("Ingresa un monto válido.");
+      return;
+    }
+    setError(null);
+    const formData = new FormData(form);
+    formData.set("amount_soles", String(value));
+    formData.set("payment_method", paymentMethod);
+    startTransition(async () => {
+      try {
+        await logDriverIncome(formData);
+        setAmount("");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error.");
+      }
+    });
+  }
 
   return (
-    <form
-      action={(formData) => {
-        setError(null);
-        startTransition(async () => {
-          try {
-            await logDriverIncome(formData);
-          } catch (err) {
-            setError(err instanceof Error ? err.message : "Error.");
-          }
-        });
-      }}
-      className="space-y-3 rounded-2xl bg-panel p-5 border border-line/60"
-    >
+    <div className="space-y-4 rounded-2xl border border-line/60 bg-panel p-5">
       <p className="font-semibold text-ink">Ingreso de carrera</p>
-      <input
-        required
-        type="number"
-        step="0.01"
-        min={0}
-        name="amount_soles"
-        placeholder="Monto S/"
-        className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
-      />
-      <select
-        required
-        name="gnv_bar"
-        defaultValue="5"
-        className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
-      >
-        {GNV_BARS.map((bar) => (
-          <option key={bar} value={bar}>
-            {GNV_BAR_LABELS[bar]} {gnvBarTone(bar) === "red" ? "🔴" : "🟢"}
-          </option>
-        ))}
-      </select>
-      <select required name="payment_method" defaultValue="yape" className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm">
-        {PAYMENT_METHODS.filter((m) => m !== "otro").map((value) => (
-          <option key={value} value={value}>
-            {PAYMENT_METHOD_LABELS[value]}
-          </option>
-        ))}
-      </select>
-      {shifts.length > 0 ? (
-        <select
-          name="driver_shift_id"
-          defaultValue={defaultShift}
-          className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
-        >
-          {shifts.map((shift) => (
-            <option key={shift.id} value={shift.id}>
-              Vuelta {shift.shift_number}
-              {shift.ended_at ? " (cerrada)" : " (activa)"}
-            </option>
-          ))}
-        </select>
-      ) : null}
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          type="date"
-          name="fecha"
-          defaultValue={workDate}
-          className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
+      <form ref={formRef}>
+        <label className="block">
+          <span className="mb-1 block text-xs text-muted">Monto S/</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min={0}
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            placeholder="0.00"
+            className="w-full rounded-xl border border-line bg-sand/40 px-4 py-4 text-2xl font-semibold tabular-nums outline-none focus:border-teal"
+          />
+        </label>
+      </form>
+      <div className="grid grid-cols-2 gap-3">
+        <PaymentButton
+          label="Yape"
+          tone="yape"
+          disabled={pending}
+          onClick={() => submit("yape")}
         />
-        <input
-          type="time"
-          name="hora"
-          defaultValue={nowTimeInLima()}
-          className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
+        <PaymentButton
+          label="Efectivo"
+          tone="cash"
+          disabled={pending}
+          onClick={() => submit("efectivo")}
         />
       </div>
-      <textarea
-        name="notes"
-        rows={2}
-        placeholder="Notas opcionales"
-        className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
-      />
       {error ? <p className="text-sm text-[var(--lm-danger)]">{error}</p> : null}
-      <button type="submit" disabled={pending} className="rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
-        {pending ? "Guardando…" : "Registrar ingreso"}
-      </button>
-    </form>
+      {pending ? <p className="text-sm text-muted">Guardando…</p> : null}
+    </div>
   );
 }
 
-function DriverExpenseForm({
-  workDate,
-  shifts,
-}: {
-  workDate: string;
-  shifts: DriverShiftRow[];
-}) {
+function DriverExpenseForm() {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState<ExpenseCategory>("combustible_gnv");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const defaultShift = shifts.find((s) => !s.ended_at)?.id ?? shifts.at(-1)?.id ?? "";
+
+  function submit(paymentMethod: "yape" | "efectivo") {
+    const form = formRef.current;
+    if (!form) return;
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      setError("Ingresa un monto válido.");
+      return;
+    }
+    setError(null);
+    const formData = new FormData(form);
+    formData.set("amount_soles", String(value));
+    formData.set("payment_method", paymentMethod);
+    formData.set("category", category);
+    startTransition(async () => {
+      try {
+        await logDriverExpense(formData);
+        setAmount("");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error.");
+      }
+    });
+  }
 
   return (
-    <form
-      action={(formData) => {
-        setError(null);
-        startTransition(async () => {
-          try {
-            await logDriverExpense(formData);
-          } catch (err) {
-            setError(err instanceof Error ? err.message : "Error.");
-          }
-        });
-      }}
-      className="space-y-3 rounded-2xl bg-panel p-5 border border-line/60"
-    >
+    <div className="space-y-4 rounded-2xl border border-line/60 bg-panel p-5">
       <p className="font-semibold text-ink">Gasto del vehículo</p>
-      <select required name="category" defaultValue="combustible_gnv" className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm">
-        {DRIVER_EXPENSE_CATEGORIES.map((value) => (
-          <option key={value} value={value}>
-            {DRIVER_EXPENSE_CATEGORY_LABELS[value]}
-          </option>
-        ))}
-      </select>
-      <input
-        name="label"
-        placeholder="Ej. Recarga GNV, saldo Yango, llantas"
-        className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
-      />
-      <input
-        required
-        type="number"
-        step="0.01"
-        min={0}
-        name="amount_soles"
-        placeholder="Monto S/"
-        className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
-      />
-      <select name="payment_method" defaultValue="yape" className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm">
-        {PAYMENT_METHODS.map((value) => (
-          <option key={value} value={value}>
-            {PAYMENT_METHOD_LABELS[value]}
-          </option>
-        ))}
-      </select>
-      {shifts.length > 0 ? (
-        <select
-          name="driver_shift_id"
-          defaultValue={defaultShift}
-          className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
-        >
-          <option value="">Sin vuelta</option>
-          {shifts.map((shift) => (
-            <option key={shift.id} value={shift.id}>
-              Vuelta {shift.shift_number}
-            </option>
-          ))}
-        </select>
-      ) : null}
       <div className="grid grid-cols-2 gap-2">
-        <input
-          type="date"
-          name="fecha"
-          defaultValue={workDate}
-          className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
+        {DRIVER_EXPENSE_CATEGORIES.map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setCategory(value)}
+            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+              category === value
+                ? "border-teal bg-teal/15 text-teal"
+                : "border-line bg-sand/40 text-ink hover:border-teal/40"
+            }`}
+          >
+            {DRIVER_EXPENSE_CATEGORY_LABELS[value]}
+          </button>
+        ))}
+      </div>
+      <form ref={formRef}>
+        <label className="block">
+          <span className="mb-1 block text-xs text-muted">Monto S/</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min={0}
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            placeholder="0.00"
+            className="w-full rounded-xl border border-line bg-sand/40 px-4 py-4 text-2xl font-semibold tabular-nums outline-none focus:border-teal"
+          />
+        </label>
+      </form>
+      <div className="grid grid-cols-2 gap-3">
+        <PaymentButton
+          label="Yape"
+          tone="yape"
+          disabled={pending}
+          onClick={() => submit("yape")}
         />
-        <input
-          type="time"
-          name="hora"
-          defaultValue={nowTimeInLima()}
-          className="w-full rounded-xl border border-line bg-sand/40 px-3 py-2 text-sm"
+        <PaymentButton
+          label="Efectivo"
+          tone="cash"
+          disabled={pending}
+          onClick={() => submit("efectivo")}
         />
       </div>
       {error ? <p className="text-sm text-[var(--lm-danger)]">{error}</p> : null}
-      <button type="submit" disabled={pending} className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
-        {pending ? "Guardando…" : "Registrar gasto"}
-      </button>
-    </form>
+      {pending ? <p className="text-sm text-muted">Guardando…</p> : null}
+    </div>
+  );
+}
+
+function PaymentButton({
+  label,
+  tone,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  tone: "yape" | "cash";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 px-3 py-4 text-base font-bold transition disabled:opacity-60 ${
+        tone === "yape"
+          ? "border-[#6B21A8]/30 bg-[#7C3AED]/10 text-[#5B21B6] hover:bg-[#7C3AED]/20"
+          : "border-forest/30 bg-forest/10 text-forest hover:bg-forest/20"
+      }`}
+    >
+      {tone === "yape" ? <YapeIcon /> : <CashIcon />}
+      {label}
+    </button>
+  );
+}
+
+function YapeIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="5" y="2" width="14" height="20" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="18" r="1.2" fill="currentColor" />
+      <path d="M9 6h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CashIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M6 9h.01M18 15h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }

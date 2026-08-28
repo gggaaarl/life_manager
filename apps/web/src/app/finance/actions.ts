@@ -6,9 +6,7 @@ import {
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
   type ExpenseCategory,
-  type GnvBar,
   type PaymentMethod,
-  GNV_BARS,
   DRIVER_EXPENSE_CATEGORY_LABELS,
   EXPENSE_CATEGORY_LABELS,
 } from "@life-manager/shared/finance/constants";
@@ -73,19 +71,6 @@ function parseCategory(value: FormDataEntryValue | null): ExpenseCategory | null
 
 function parseOccurredAt(formData: FormData): string {
   return parseFormDateTime(formData.get("fecha"), formData.get("hora"));
-}
-
-function parseGnvBar(value: FormDataEntryValue | null): GnvBar {
-  const parsed = Number(value);
-  if (!GNV_BARS.includes(parsed as GnvBar)) {
-    throw new Error("Selecciona la barra GNV (1–5).");
-  }
-  return parsed as GnvBar;
-}
-
-function parseShiftId(value: FormDataEntryValue | null): string | null {
-  const text = String(value ?? "").trim();
-  return text || null;
 }
 
 async function getDriverJobId(supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -252,99 +237,26 @@ export async function logManualIncome(formData: FormData) {
   revalidatePath("/finance");
 }
 
-export async function startDriverShift(formData: FormData) {
-  const { supabase, user } = await requireUser();
-  const jobId = await getDriverJobId(supabase);
-
-  const workDate = String(formData.get("work_date") ?? "").trim();
-  const shiftNumber = Number(formData.get("shift_number"));
-  const startTime = String(formData.get("started_at_time") ?? "").trim();
-  if (!workDate || !startTime || !Number.isFinite(shiftNumber)) {
-    throw new Error("Completa fecha y hora de inicio.");
-  }
-
-  const breakMinutes = Number(formData.get("break_minutes") ?? 0);
-  const startedAt = new Date(`${workDate}T${startTime}:00-05:00`).toISOString();
-
-  const { error } = await supabase.from("driver_shifts").insert({
-    user_id: user.id,
-    job_id: jobId,
-    work_date: workDate,
-    shift_number: shiftNumber,
-    started_at: startedAt,
-    break_minutes: Number.isFinite(breakMinutes) ? Math.max(0, breakMinutes) : 0,
-    notes: String(formData.get("notes") ?? "").trim() || null,
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath("/driver");
-}
-
-export async function endDriverShift(formData: FormData) {
-  const { supabase, user } = await requireUser();
-  const shiftId = String(formData.get("shift_id") ?? "").trim();
-  const endTime = String(formData.get("ended_at_time") ?? "").trim();
-  if (!shiftId || !endTime) {
-    throw new Error("Indica hora de cierre.");
-  }
-
-  const { data: shift } = await supabase
-    .from("driver_shifts")
-    .select("work_date")
-    .eq("id", shiftId)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!shift) {
-    throw new Error("Vuelta no encontrada.");
-  }
-
-  const breakMinutes = Number(formData.get("break_minutes") ?? 0);
-  const endedAt = new Date(`${shift.work_date}T${endTime}:00-05:00`).toISOString();
-
-  const { error } = await supabase
-    .from("driver_shifts")
-    .update({
-      ended_at: endedAt,
-      break_minutes: Number.isFinite(breakMinutes) ? Math.max(0, breakMinutes) : 0,
-    })
-    .eq("id", shiftId)
-    .eq("user_id", user.id);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath("/driver");
-}
-
 export async function logDriverIncome(formData: FormData) {
   const { supabase, user } = await requireUser();
   const paymentMethod = parsePaymentMethod(formData.get("payment_method"));
-  if (!paymentMethod) {
-    throw new Error("Indica Yape, Plin o efectivo.");
+  if (paymentMethod !== "yape" && paymentMethod !== "efectivo") {
+    throw new Error("Indica Yape o efectivo.");
   }
 
   const jobId = await getDriverJobId(supabase);
-  const gnvBar = parseGnvBar(formData.get("gnv_bar"));
   const amount = parseAmount(formData.get("amount_soles"));
-  const label = `Carrera ${PAYMENT_METHOD_LABELS[paymentMethod]} · barra ${gnvBar}`;
+  const label = `Carrera ${PAYMENT_METHOD_LABELS[paymentMethod]}`;
 
   const { error } = await supabase.from("finance_movements").insert({
     user_id: user.id,
-    occurred_at: parseOccurredAt(formData),
+    occurred_at: new Date().toISOString(),
     direction: "in",
     amount_soles: amount,
     payment_method: paymentMethod,
     job_id: jobId,
-    driver_shift_id: parseShiftId(formData.get("driver_shift_id")),
-    gnv_bar: gnvBar,
     source: "driver_income",
     label,
-    notes: String(formData.get("notes") ?? "").trim() || null,
   });
 
   if (error) {
@@ -362,28 +274,28 @@ export async function logDriverExpense(formData: FormData) {
     throw new Error("Selecciona categoría del vehículo.");
   }
 
-  let label = String(formData.get("label") ?? "").trim();
-  if (!label) {
-    label =
-      category in DRIVER_EXPENSE_CATEGORY_LABELS
-        ? DRIVER_EXPENSE_CATEGORY_LABELS[category as keyof typeof DRIVER_EXPENSE_CATEGORY_LABELS]
-        : EXPENSE_CATEGORY_LABELS[category];
+  const paymentMethod = parsePaymentMethod(formData.get("payment_method"));
+  if (paymentMethod !== "yape" && paymentMethod !== "efectivo") {
+    throw new Error("Indica Yape o efectivo.");
   }
+
+  const label =
+    category in DRIVER_EXPENSE_CATEGORY_LABELS
+      ? DRIVER_EXPENSE_CATEGORY_LABELS[category as keyof typeof DRIVER_EXPENSE_CATEGORY_LABELS]
+      : EXPENSE_CATEGORY_LABELS[category];
 
   const jobId = await getDriverJobId(supabase);
 
   const { error } = await supabase.from("finance_movements").insert({
     user_id: user.id,
-    occurred_at: parseOccurredAt(formData),
+    occurred_at: new Date().toISOString(),
     direction: "out",
     amount_soles: parseAmount(formData.get("amount_soles")),
-    payment_method: parsePaymentMethod(formData.get("payment_method")),
+    payment_method: paymentMethod,
     job_id: jobId,
-    driver_shift_id: parseShiftId(formData.get("driver_shift_id")),
     source: "driver_expense",
     category,
     label,
-    notes: String(formData.get("notes") ?? "").trim() || null,
   });
 
   if (error) {

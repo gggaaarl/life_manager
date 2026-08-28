@@ -56,7 +56,7 @@ export default async function DriverPage({ searchParams }: PageProps) {
     redirect("/home");
   }
 
-  const [{ data: movements }, { data: shifts }] = await Promise.all([
+  const [{ data: movements }] = await Promise.all([
     supabase
       .from("finance_movements")
       .select(
@@ -67,12 +67,6 @@ export default async function DriverPage({ searchParams }: PageProps) {
       .gte("occurred_at", start)
       .lt("occurred_at", end)
       .order("occurred_at", { ascending: true }),
-    supabase
-      .from("driver_shifts")
-      .select("id, shift_number, started_at, ended_at, break_minutes, notes")
-      .eq("user_id", user.id)
-      .eq("work_date", workDate)
-      .order("shift_number", { ascending: true }),
   ]);
 
   const rows = movements ?? [];
@@ -103,7 +97,7 @@ export default async function DriverPage({ searchParams }: PageProps) {
         </div>
 
         <div className="mt-6">
-          <DriverForms workDate={workDate} shifts={shifts ?? []} />
+          <DriverForms />
         </div>
       </div>
     </main>
