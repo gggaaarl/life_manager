@@ -4,7 +4,6 @@ import { DayIncomeSummary } from "@/components/finance/day-income-summary";
 import { FinanceForms } from "@/components/finance/finance-forms";
 import { FinanceLedgerTable } from "@/components/finance/finance-ledger-table";
 import { WalletBalancesEditor } from "@/components/finance/wallet-balances-editor";
-import { sortPaymentAccountsForDisplay } from "@/components/finance/sort-payment-accounts";
 import { DayPicker } from "@/components/driver/day-picker";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
 import {
@@ -107,17 +106,6 @@ export default async function FinancePage({ searchParams }: PageProps) {
     };
   });
 
-  const activeAccounts = sortPaymentAccountsForDisplay(
-    accounts.map((a) => ({
-      id: a.id,
-      slug: a.slug,
-      label: a.label,
-      sort_order: a.sort_order,
-      is_active: a.is_active,
-      balance_soles: a.allocated_soles,
-    })),
-  ).map(({ id, label }) => ({ id, label }));
-
   return (
     <main className="min-h-dvh bg-sand">
       <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu />
@@ -143,7 +131,6 @@ export default async function FinancePage({ searchParams }: PageProps) {
         <div className="mt-6">
           <FinanceForms
             workDate={workDate}
-            paymentAccounts={activeAccounts}
             expenseItems={(expenseItems ?? []).map((row) => ({
               id: row.id,
               name: row.name,

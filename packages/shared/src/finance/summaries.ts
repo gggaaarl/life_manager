@@ -55,6 +55,17 @@ export function nowTimeInLima(): string {
   }).format(new Date());
 }
 
+/** Día elegido en la UI + hora actual al guardar (Lima). */
+export function occurredAtForWorkDate(workDateYmd: string, at: Date = new Date()): string {
+  const time = new Intl.DateTimeFormat("en-GB", {
+    timeZone: LIMA_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(at);
+  return new Date(`${workDateYmd}T${time}:00-05:00`).toISOString();
+}
+
 export type MovementRow = {
   id: string;
   occurred_at: string;

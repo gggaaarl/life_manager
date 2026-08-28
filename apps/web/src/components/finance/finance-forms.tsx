@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { logManualExpense } from "@/app/finance/actions";
 import {
   FINANCE_MANUAL_EXPENSE_CATEGORIES,
@@ -8,34 +8,44 @@ import {
   type ExpenseCategory,
 } from "@life-manager/shared/finance/constants";
 import { normalizeExpenseLabel, type ExpenseItemRow } from "@life-manager/shared/finance/expense-items";
-import { nowTimeInLima } from "@life-manager/shared/finance/summaries";
 
-type PaymentAccountOption = {
-  id: string;
-  label: string;
-};
+function formatItemOption(item: ExpenseItemRow): string {
+  const parts = [item.name];
+  const brand = item.brand?.trim();
+  if (
+    brand &&
+    normalizeExpenseLabel(brand) !== normalizeExpenseLabel(item.name) &&
+    !normalizeExpenseLabel(item.name).includes(normalizeExpenseLabel(brand))
+  ) {
+    parts.push(brand);
+  }
+  if (item.default_price_soles > 0) {
+    parts.push(`S/ ${item.default_price_soles.toFixed(2)}`);
+  }
+  return parts.join(" · ");
+}
 
 export function FinanceForms({
   workDate,
-  paymentAccounts,
   expenseItems,
 }: {
   workDate: string;
-  paymentAccounts: PaymentAccountOption[];
   expenseItems: ExpenseItemRow[];
 }) {
-  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("comida");
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
+  const [listOpen, setListOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
-    const q = normalizeExpenseLabel(search);
+    const q = normalizeExpenseLabel(query);
     const pool = expenseItems.filter((item) => item.default_category === category);
     if (!q) {
-      return pool.slice(0, 30);
+      return pool.slice(0, 20);
     }
     return pool
       .filter(
@@ -43,37 +53,56 @@ export function FinanceForms({
           normalizeExpenseLabel(item.name).includes(q) ||
           normalizeExpenseLabel(item.brand ?? "").includes(q),
       )
-      .slice(0, 30);
-  }, [category, expenseItems, search]);
+      .slice(0, 20);
+  }, [category, expenseItems, query]);
 
-  const selected = expenseItems.find((item) => item.id === selectedId) ?? filtered[0] ?? null;
   const isNewItem =
-    search.trim().length > 0 &&
+    query.trim().length > 0 &&
     !expenseItems.some(
       (item) =>
         item.default_category === category &&
-        normalizeExpenseLabel(item.name) === normalizeExpenseLabel(search),
+        normalizeExpenseLabel(item.name) === normalizeExpenseLabel(query),
     );
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setListOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  function pickItem(item: ExpenseItemRow) {
+    setQuery(item.name);
+    setSelectedId(item.id);
+    setListOpen(false);
+    if (!amount && item.default_price_soles > 0) {
+      setAmount(String(item.default_price_soles));
+    }
+  }
 
   return (
     <form
       action={(formData) => {
         setError(null);
-        const label = search.trim() || selected?.name || "";
+        const label = query.trim();
         if (!label) {
           setError("Elige o escribe un ítem.");
           return;
         }
         formData.set("label", label);
         formData.set("category", category);
-        if (selected && !isNewItem) {
-          formData.set("expense_item_id", selected.id);
+        formData.set("fecha", workDate);
+        if (selectedId && !isNewItem) {
+          formData.set("expense_item_id", selectedId);
         }
         startTransition(async () => {
           try {
             await logManualExpense(formData);
-            setSearch("");
-            setSelectedId("");
+            setQuery("");
+            setSelectedId(null);
             setAmount("");
           } catch (err) {
             setError(err instanceof Error ? err.message : "Error.");
@@ -83,16 +112,13 @@ export function FinanceForms({
       className="space-y-3 rounded-xl border border-line bg-panel p-4 shadow-sm"
     >
       <p className="font-semibold text-ink">Registrar gasto</p>
-      <p className="text-xs text-muted">
-        Elige del catálogo o escribe un nombre nuevo (se crea automáticamente la primera vez).
-      </p>
 
       <select
         name="category"
         value={category}
         onChange={(event) => {
           setCategory(event.target.value as ExpenseCategory);
-          setSelectedId("");
+          setSelectedId(null);
         }}
         className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
       >
@@ -103,41 +129,36 @@ export function FinanceForms({
         ))}
       </select>
 
-      <input
-        type="search"
-        value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-          setSelectedId("");
-        }}
-        placeholder="Buscar o escribir ítem…"
-        className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
-      />
-
-      {filtered.length > 0 ? (
-        <select
-          value={selected?.id ?? ""}
+      <div ref={rootRef} className="relative">
+        <input
+          type="text"
+          value={query}
           onChange={(event) => {
-            setSelectedId(event.target.value);
-            const item = expenseItems.find((row) => row.id === event.target.value);
-            if (item) {
-              setSearch(item.name);
-              if (!amount) {
-                setAmount(String(item.default_price_soles || ""));
-              }
-            }
+            setQuery(event.target.value);
+            setSelectedId(null);
+            setListOpen(true);
           }}
+          onFocus={() => setListOpen(true)}
+          placeholder="Buscar o escribir ítem…"
+          autoComplete="off"
           className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
-        >
-          {filtered.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-              {item.brand ? ` · ${item.brand}` : ""}
-              {item.default_price_soles > 0 ? ` · S/ ${item.default_price_soles.toFixed(2)}` : ""}
-            </option>
-          ))}
-        </select>
-      ) : null}
+        />
+        {listOpen && filtered.length > 0 ? (
+          <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-line bg-panel shadow-md">
+            {filtered.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => pickItem(item)}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-sand/80"
+                >
+                  {formatItemOption(item)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
 
       {isNewItem ? (
         <p className="text-xs text-teal">Nuevo ítem: se agregará al catálogo al guardar.</p>
@@ -154,31 +175,7 @@ export function FinanceForms({
         placeholder="Monto"
         className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
       />
-      <select
-        name="payment_account_id"
-        className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
-      >
-        <option value="">Sin cuenta</option>
-        {paymentAccounts.map((account) => (
-          <option key={account.id} value={account.id}>
-            {account.label}
-          </option>
-        ))}
-      </select>
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          type="date"
-          name="fecha"
-          defaultValue={workDate}
-          className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
-        />
-        <input
-          type="time"
-          name="hora"
-          defaultValue={nowTimeInLima()}
-          className="w-full rounded-lg border border-line bg-sand px-3 py-2 text-sm"
-        />
-      </div>
+
       {error ? <p className="text-sm text-[var(--lm-danger)]">{error}</p> : null}
       <button
         type="submit"

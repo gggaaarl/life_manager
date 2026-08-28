@@ -12,7 +12,7 @@ import {
   FINANCE_MANUAL_EXPENSE_CATEGORIES,
 } from "@life-manager/shared/finance/constants";
 import { computeFoodLogValues } from "@life-manager/shared/finance/food";
-import { parseFormDateTime } from "@life-manager/shared/finance/summaries";
+import { parseFormDateTime, occurredAtForWorkDate, todayInLima } from "@life-manager/shared/finance/summaries";
 import { normalizeExpenseLabel } from "@life-manager/shared/finance/expense-items";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -281,8 +281,8 @@ export async function logManualExpense(formData: FormData) {
 
   const category = parseCategory(formData.get("category")) ?? "otro";
   const amountSoles = parseAmount(formData.get("amount_soles"));
-  const paymentAccountId = parsePaymentAccountId(formData.get("payment_account_id"));
   const expenseItemId = String(formData.get("expense_item_id") ?? "").trim() || null;
+  const workDate = String(formData.get("fecha") ?? "").trim() || todayInLima();
 
   const item = await resolveExpenseItem(
     supabase,
@@ -295,11 +295,9 @@ export async function logManualExpense(formData: FormData) {
 
   const { error } = await supabase.from("finance_movements").insert({
     user_id: user.id,
-    occurred_at: parseOccurredAt(formData),
+    occurred_at: occurredAtForWorkDate(workDate),
     direction: "out",
     amount_soles: amountSoles,
-    payment_method: parsePaymentMethod(formData.get("payment_method")),
-    payment_account_id: paymentAccountId,
     source: "expense",
     category: item.default_category,
     expense_item_id: item.id,
