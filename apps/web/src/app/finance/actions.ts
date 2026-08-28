@@ -466,12 +466,18 @@ export async function upsertPaymentAccount(formData: FormData) {
       throw new Error(insertError.message);
     }
 
-    if (inserted) {
-      await supabase.from("user_account_balances").upsert({
-        user_id: user.id,
-        payment_account_id: inserted.id,
-        balance_soles: 0,
-      });
+  if (inserted) {
+      const { error: balanceError } = await supabase.from("user_account_balances").upsert(
+        {
+          user_id: user.id,
+          payment_account_id: inserted.id,
+          balance_soles: 0,
+        },
+        { onConflict: "user_id,payment_account_id" },
+      );
+      if (balanceError) {
+        throw new Error(balanceError.message);
+      }
     }
   }
 
@@ -584,12 +590,15 @@ export async function updateAccountAllocation(formData: FormData) {
     throw new Error("Efectivo se calcula automáticamente.");
   }
 
-  const { error } = await supabase.from("user_account_balances").upsert({
-    user_id: user.id,
-    payment_account_id: accountId,
-    balance_soles: amount,
-    updated_at: new Date().toISOString(),
-  });
+  const { error } = await supabase.from("user_account_balances").upsert(
+    {
+      user_id: user.id,
+      payment_account_id: accountId,
+      balance_soles: amount,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,payment_account_id" },
+  );
 
   if (error) {
     throw new Error(error.message);

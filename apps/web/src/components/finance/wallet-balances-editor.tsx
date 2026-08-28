@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { updateAccountAllocation } from "@/app/finance/actions";
 import { formatSoles } from "@life-manager/shared/finance/constants";
 import type { PaymentAccountAllocation } from "@life-manager/shared/finance/ledger";
@@ -79,6 +80,7 @@ function EditableAccountCell({
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   if (readOnly) {
     return (
@@ -105,12 +107,15 @@ function EditableAccountCell({
   return (
     <form
       className="rounded-lg border border-teal/40 bg-sand/50 px-2 py-2"
-      action={(formData) => {
+      onSubmit={(event) => {
+        event.preventDefault();
         setError(null);
+        const formData = new FormData(event.currentTarget);
         startTransition(async () => {
           try {
             await updateAccountAllocation(formData);
             setEditing(false);
+            router.refresh();
           } catch (err) {
             setError(err instanceof Error ? err.message : "Error.");
           }
