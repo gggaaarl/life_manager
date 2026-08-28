@@ -5,6 +5,11 @@ type ProfileAccess = {
   experimental_profiles: string[] | null;
 };
 
+type JobStatusRow = {
+  code: string;
+  status: "locked" | "unlocked" | "active";
+};
+
 type ProfilesRow = {
   role?: string | null;
   experimental_profiles?: string[] | null;
@@ -33,7 +38,16 @@ export async function getProfileAccess(supabase: unknown, userId: string): Promi
   };
 }
 
-export function canAccessPlayerMenu(profile: ProfileAccess, userId: string): boolean {
+export function canAccessPlayerMenu(
+  profile: ProfileAccess,
+  userId: string,
+  userJobs: JobStatusRow[] = [],
+): boolean {
+  const player = userJobs.find((job) => job.code === "PLAYER");
+  if (player && (player.status === "active" || player.status === "unlocked")) {
+    return true;
+  }
+
   if (userId === INAUGURAL_USER_ID) {
     return true;
   }

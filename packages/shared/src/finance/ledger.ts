@@ -14,8 +14,8 @@ export type LedgerMovement = {
 export function jobCodeToLabel(code: string | null | undefined, source: string): string {
   if (code === "DRIVER") return "taxi";
   if (code === "TRAINER") return "trainer";
-  if (code === "NATURISTA") return "naturista";
   if (code === "BOTANICO") return "botánico";
+  if (code === "NATURISTA") return "botánico";
   if (code === "DEVELOPER") return "desarrollador";
   if (code === "TRAINEE") return "trainee";
   if (code === "PLAYER") return "player";

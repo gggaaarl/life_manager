@@ -44,7 +44,7 @@ export function LoginForm({ errorMessage }: Props) {
       setLoading(null);
       return;
     }
-    window.location.href = "/home";
+    window.location.href = "/finance";
   }
 
   const error = localError ?? errorMessage;

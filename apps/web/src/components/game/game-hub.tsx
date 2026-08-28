@@ -148,9 +148,9 @@ function JobCard({ job, driverActive }: { job: UserJobRow; driverActive?: boolea
         {job.name}
       </p>
       <p className="mt-2 text-sm text-muted">{status}</p>
-      {job.code === "NATURISTA" && (job.status === "active" || job.status === "unlocked") ? (
+      {job.code === "BOTANICO" && (job.status === "active" || job.status === "unlocked") ? (
         <Link href="/nutrition" className="mt-4 inline-flex text-sm font-semibold text-teal">
-          Abrir nutrición →
+          Abrir botánico →
         </Link>
       ) : null}
       {job.code === "PLAYER" ? (

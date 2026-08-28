@@ -1,9 +1,9 @@
 import { AppHeader } from "@/components/layout/app-header";
+import { FinanceNavTabs } from "@/components/finance/finance-nav-tabs";
 import { PaymentAccountsSettings } from "@/components/finance/payment-accounts-settings";
 import { sortPaymentAccountsForDisplay } from "@/components/finance/sort-payment-accounts";
-import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import { getUserNavJobs } from "@/lib/nav/get-user-nav-jobs";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function FinanceConfigPage() {
@@ -15,8 +15,7 @@ export default async function FinanceConfigPage() {
     redirect("/login");
   }
 
-  const accessProfile = await getProfileAccess(supabase, user.id);
-  const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
+  const userJobs = await getUserNavJobs(supabase, user.id);
 
   const { data: paymentAccounts } = await supabase
     .from("user_payment_accounts")
@@ -37,13 +36,11 @@ export default async function FinanceConfigPage() {
 
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu />
+      <AppHeader userJobs={userJobs} />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
-        <Link href="/finance" className="text-sm font-medium text-teal">
-          ← Finanzas
-        </Link>
-        <h1 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
-          Configuración de finanzas
+        <FinanceNavTabs />
+        <h1 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+          Configuración
         </h1>
         <p className="mt-1 text-sm text-muted">
           Activa las cuentas que usas y agrega nuevas (ej. BBVA · mamá, SIP · mamá).

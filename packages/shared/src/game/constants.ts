@@ -4,11 +4,15 @@ export const MEDAL_CODES = {
 } as const;
 
 export const JOB_CODES = {
-  TRAINEE: "TRAINEE",
+  DEVELOPER: "DEVELOPER",
   DRIVER: "DRIVER",
   PLAYER: "PLAYER",
   TRAINER: "TRAINER",
+  BOTANICO: "BOTANICO",
+  /** @deprecated Usar BOTANICO */
   NATURISTA: "NATURISTA",
+  /** @deprecated Retirado del catálogo activo */
+  TRAINEE: "TRAINEE",
 } as const;
 
 export type JobCode = (typeof JOB_CODES)[keyof typeof JOB_CODES];

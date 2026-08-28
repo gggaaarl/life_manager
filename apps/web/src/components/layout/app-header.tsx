@@ -2,36 +2,36 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-
-type NavLink = {
-  href: string;
-  label: string;
-  exact?: boolean;
-};
+import type { NavJob } from "@life-manager/shared/game/job-nav";
 
 type Props = {
-  showPlayerMenu?: boolean;
-  showNutritionMenu?: boolean;
-  showFinanceMenu?: boolean;
-  showDriverMenu?: boolean;
+  userJobs?: NavJob[];
 };
 
-export function AppHeader({
-  showPlayerMenu = false,
-  showNutritionMenu = false,
-  showFinanceMenu = false,
-  showDriverMenu = false,
-}: Props) {
+export function AppHeader({ userJobs = [] }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [jobsOpen, setJobsOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const jobsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOpen(false);
+    setJobsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (jobsRef.current && !jobsRef.current.contains(event.target as Node)) {
+        setJobsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, []);
 
   async function signOut() {
     setSigningOut(true);
@@ -41,48 +41,73 @@ export function AppHeader({
     router.refresh();
   }
 
-  const links: NavLink[] = [
-    { href: "/home", label: "Hub" },
-    ...(showNutritionMenu ? [{ href: "/nutrition", label: "Nutrición" }] : []),
-    ...(showFinanceMenu
-      ? [
-          { href: "/finance", label: "Finanzas", exact: true },
-          { href: "/finance/configuracion", label: "Configuración de finanzas" },
-        ]
-      : []),
-    ...(showDriverMenu ? [{ href: "/driver", label: "Chofer" }] : []),
-    ...(showPlayerMenu ? [{ href: "/player/citas", label: "Salidas" }] : []),
-  ];
+  const financeActive =
+    pathname === "/finance" || pathname.startsWith("/finance/");
+
+  const jobsActive = userJobs.some(
+    (job) => pathname === job.href || pathname.startsWith(`${job.href}/`),
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-panel/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
-          href="/home"
+          href="/finance"
           className="font-[family-name:var(--font-display)] text-xs font-bold tracking-[0.08em] text-mint sm:text-sm"
         >
           NATURALEZA<span className="text-teal">CRUEL</span>
         </Link>
 
-        <nav className="hidden flex-wrap items-center justify-end gap-1 md:flex lg:flex-nowrap">
-          {links.map((link) => {
-            const active = link.exact
-              ? pathname === link.href
-              : pathname === link.href || pathname.startsWith(`${link.href}/`);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-lg px-2.5 py-2 text-xs font-medium transition lg:px-3 lg:text-sm ${
-                  active
+        <nav className="hidden items-center justify-end gap-1 md:flex">
+          <Link
+            href="/finance"
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              financeActive
+                ? "bg-teal/15 text-teal"
+                : "text-muted hover:bg-panel-hover hover:text-ink"
+            }`}
+          >
+            Finanzas
+          </Link>
+
+          {userJobs.length > 0 ? (
+            <div ref={jobsRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setJobsOpen((value) => !value)}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  jobsActive || jobsOpen
                     ? "bg-teal/15 text-teal"
                     : "text-muted hover:bg-panel-hover hover:text-ink"
                 }`}
+                aria-expanded={jobsOpen}
               >
-                {link.label}
-              </Link>
-            );
-          })}
+                Mis trabajos ▾
+              </button>
+              {jobsOpen ? (
+                <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] rounded-lg border border-line bg-panel py-1 shadow-lg">
+                  {userJobs.map((job) => {
+                    const active =
+                      pathname === job.href || pathname.startsWith(`${job.href}/`);
+                    return (
+                      <Link
+                        key={job.code}
+                        href={job.href}
+                        className={`block px-4 py-2 text-sm capitalize ${
+                          active
+                            ? "bg-teal/10 font-medium text-teal"
+                            : "text-ink hover:bg-sand/80"
+                        }`}
+                      >
+                        {job.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <button
             type="button"
             onClick={signOut}
@@ -107,22 +132,36 @@ export function AppHeader({
       {open ? (
         <div className="border-t border-line bg-panel md:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col px-4 py-3 sm:px-6">
-            {links.map((link) => {
-              const active = link.exact
-                ? pathname === link.href
-                : pathname === link.href || pathname.startsWith(`${link.href}/`);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`rounded-lg px-3 py-3 text-sm font-medium ${
-                    active ? "bg-teal/15 text-teal" : "text-ink"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+            <Link
+              href="/finance"
+              className={`rounded-lg px-3 py-3 text-sm font-medium ${
+                financeActive ? "bg-teal/15 text-teal" : "text-ink"
+              }`}
+            >
+              Finanzas
+            </Link>
+            {userJobs.length > 0 ? (
+              <>
+                <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Mis trabajos
+                </p>
+                {userJobs.map((job) => {
+                  const active =
+                    pathname === job.href || pathname.startsWith(`${job.href}/`);
+                  return (
+                    <Link
+                      key={job.code}
+                      href={job.href}
+                      className={`rounded-lg px-5 py-2.5 text-sm capitalize ${
+                        active ? "bg-teal/15 text-teal" : "text-ink"
+                      }`}
+                    >
+                      {job.label}
+                    </Link>
+                  );
+                })}
+              </>
+            ) : null}
             <button
               type="button"
               onClick={signOut}

@@ -1,11 +1,12 @@
 import { AppHeader } from "@/components/layout/app-header";
+import { FinanceNavTabs } from "@/components/finance/finance-nav-tabs";
 import { DayFoodExpensesSummary } from "@/components/finance/day-food-expenses-summary";
 import { DayIncomeSummary } from "@/components/finance/day-income-summary";
 import { FinanceForms } from "@/components/finance/finance-forms";
 import { FinanceLedgerTable } from "@/components/finance/finance-ledger-table";
 import { WalletBalancesEditor } from "@/components/finance/wallet-balances-editor";
 import { DayPicker } from "@/components/driver/day-picker";
-import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import { getUserNavJobs } from "@/lib/nav/get-user-nav-jobs";
 import {
   buildFinanceExpenseRows,
   buildFinanceIncomeRows,
@@ -44,8 +45,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
     redirect("/login");
   }
 
-  const accessProfile = await getProfileAccess(supabase, user.id);
-  const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
+  const userJobs = await getUserNavJobs(supabase, user.id);
 
   const [
     { data: dayMovements },
@@ -108,9 +108,12 @@ export default async function FinancePage({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu />
+      <AppHeader userJobs={userJobs} />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        <DayPicker value={workDate} />
+        <FinanceNavTabs />
+        <div className="mt-4">
+          <DayPicker value={workDate} />
+        </div>
 
         <div className="mt-4">
           <WalletBalancesEditor workDate={workDate} totalNet={totalNet} accounts={accounts} />

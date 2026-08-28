@@ -3,9 +3,9 @@ import { CitasTable, type CitaRow } from "@/components/player/citas-table";
 import { AppHeader } from "@/components/layout/app-header";
 import { CitasDebugLog } from "@/components/debug/console-log";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import { getUserJobStatuses, getUserNavJobs } from "@/lib/nav/get-user-nav-jobs";
 import type { PlayerPresion } from "@life-manager/shared/player/constants";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function PlayerCitasPage() {
@@ -19,9 +19,12 @@ export default async function PlayerCitasPage() {
   }
 
   const profile = await getProfileAccess(supabase, user.id);
-  if (!canAccessPlayerMenu(profile, user.id)) {
-    redirect("/home");
+  const jobStatuses = await getUserJobStatuses(supabase, user.id);
+  if (!canAccessPlayerMenu(profile, user.id, jobStatuses)) {
+    redirect("/finance");
   }
+
+  const userJobs = await getUserNavJobs(supabase, user.id);
 
   const { data: citasRaw, error: citasError } = await supabase
     .from("player_citas")
@@ -71,17 +74,10 @@ export default async function PlayerCitasPage() {
 
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader showPlayerMenu showNutritionMenu showFinanceMenu />
+      <AppHeader userJobs={userJobs} />
       <CitasDebugLog userId={user.id} citasCount={citas.length} queryError={queryError} />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <Link
-          href="/home"
-          className="inline-flex text-sm font-medium text-teal transition hover:opacity-80"
-        >
-          ← Volver al hub
-        </Link>
-
-        <div className="mt-3 mb-6">
+        <div className="mb-6">
           <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
             PLAYER
           </p>

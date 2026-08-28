@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
 import { GameHub } from "@/components/game/game-hub";
-import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import { getUserNavJobs } from "@/lib/nav/get-user-nav-jobs";
 import type { MedalRow, UserJobRow } from "@life-manager/shared/game/constants";
 
 export default async function HomePage() {
@@ -27,8 +27,7 @@ export default async function HomePage() {
     user.email ??
     "Usuario";
 
-  const accessProfile = await getProfileAccess(supabase, user.id);
-  const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
+  const userJobs = await getUserNavJobs(supabase, user.id);
 
   const [{ data: jobsRaw }, { data: medalsRaw }, { data: userMedals }] = await Promise.all([
     supabase
@@ -73,18 +72,9 @@ export default async function HomePage() {
     unlocked: unlockedCodes.has(medal.code),
   }));
 
-  const driverJob = jobs.find((job) => job.code === "DRIVER");
-  const showDriverMenu =
-    driverJob?.status === "active" || driverJob?.status === "unlocked";
-
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader
-        showPlayerMenu={showPlayerMenu}
-        showNutritionMenu
-        showFinanceMenu
-        showDriverMenu={showDriverMenu}
-      />
+      <AppHeader userJobs={userJobs} />
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-ink">

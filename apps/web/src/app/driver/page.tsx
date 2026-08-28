@@ -7,7 +7,7 @@ import {
   buildIncomeRows,
   JobBalanceSheet,
 } from "@/components/finance/job-balance-sheet";
-import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import { getUserNavJobs } from "@/lib/nav/get-user-nav-jobs";
 import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -31,8 +31,7 @@ export default async function DriverPage({ searchParams }: PageProps) {
     redirect("/login");
   }
 
-  const accessProfile = await getProfileAccess(supabase, user.id);
-  const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
+  const userJobs = await getUserNavJobs(supabase, user.id);
 
   const { data: driverJob } = await supabase
     .from("jobs")
@@ -53,7 +52,7 @@ export default async function DriverPage({ searchParams }: PageProps) {
     userJob?.status === "active" || userJob?.status === "unlocked";
 
   if (!canUseDriver) {
-    redirect("/home");
+    redirect("/finance");
   }
 
   const [{ data: movements }] = await Promise.all([
@@ -77,7 +76,7 @@ export default async function DriverPage({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu showDriverMenu />
+      <AppHeader userJobs={userJobs} />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
         <DayPicker value={workDate} />
 

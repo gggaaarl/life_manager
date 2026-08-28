@@ -1,12 +1,11 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { FoodLogForm } from "@/components/trainee/food-log-form";
 import { WalletBalances } from "@/components/finance/wallet-balances";
-import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import { getUserNavJobs } from "@/lib/nav/get-user-nav-jobs";
 import { formatSoles, todayUtcRange } from "@life-manager/shared/finance/constants";
 import { sumExpensesToday, sumKcalToday } from "@life-manager/shared/finance/summaries";
 import type { FoodItemRow } from "@life-manager/shared/finance/food";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function NutritionPage() {
@@ -18,8 +17,7 @@ export default async function NutritionPage() {
     redirect("/login");
   }
 
-  const accessProfile = await getProfileAccess(supabase, user.id);
-  const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
+  const userJobs = await getUserNavJobs(supabase, user.id);
   const { start, end } = todayUtcRange();
 
   const [{ data: foodsRaw }, { data: movements }, { data: paymentAccounts }] = await Promise.all([
@@ -56,26 +54,9 @@ export default async function NutritionPage() {
   const kcalToday = sumKcalToday(rows);
   const foodSpendToday = sumExpensesToday(rows.filter((row) => row.source === "food"));
 
-  const { data: driverJob } = await supabase.from("jobs").select("id").eq("code", "DRIVER").single();
-  const { data: userDriverJob } = driverJob
-    ? await supabase
-        .from("user_jobs")
-        .select("status")
-        .eq("user_id", user.id)
-        .eq("job_id", driverJob.id)
-        .maybeSingle()
-    : { data: null };
-  const showDriverMenu =
-    userDriverJob?.status === "active" || userDriverJob?.status === "unlocked";
-
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader
-        showPlayerMenu={showPlayerMenu}
-        showFinanceMenu
-        showNutritionMenu
-        showDriverMenu={showDriverMenu}
-      />
+      <AppHeader userJobs={userJobs} />
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-panel p-5 border border-line/60">
@@ -92,12 +73,9 @@ export default async function NutritionPage() {
           </div>
         </div>
 
-        <Link href="/home" className="text-sm font-medium text-teal">
-          ← Hub
-        </Link>
         <div className="mt-3 mb-6">
           <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.18em] text-teal">
-            NATURISTA
+            BOTÁNICO
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-bold text-ink">
             Nutrición
