@@ -1,25 +1,36 @@
 import { AppHeader } from "@/components/layout/app-header";
-import { DayBalanceCard } from "@/components/finance/day-balance-card";
+import { DayFoodExpensesSummary } from "@/components/finance/day-food-expenses-summary";
+import { DayIncomeSummary } from "@/components/finance/day-income-summary";
 import { FinanceForms } from "@/components/finance/finance-forms";
-import {
-  buildExpenseItems,
-  buildIncomeRows,
-  JobBalanceSheet,
-} from "@/components/finance/job-balance-sheet";
-import { WalletBalances } from "@/components/finance/wallet-balances";
+import { FinanceLedgerTable } from "@/components/finance/finance-ledger-table";
+import { WalletBalancesEditor } from "@/components/finance/wallet-balances-editor";
 import { sortPaymentAccountsForDisplay } from "@/components/finance/sort-payment-accounts";
 import { DayPicker } from "@/components/driver/day-picker";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import {
+  buildFinanceExpenseRows,
+  buildFinanceIncomeRows,
+  computeNetBalance,
+  summarizeDayIncomeByJob,
+  sumFoodExpenses,
+  type LedgerMovement,
+} from "@life-manager/shared/finance/ledger";
 import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-/** Día con data histórica cargada (sáb 22-ago-2026). */
 const DEFAULT_FINANCE_DATE = "2026-08-22";
+
+const MOVEMENT_SELECT =
+  "id, occurred_at, direction, amount_soles, label, payment_method, source, category, job_id, jobs(code)";
 
 type PageProps = {
   searchParams: Promise<{ date?: string }>;
 };
+
+function asLedgerRows(rows: unknown[]): LedgerMovement[] {
+  return (rows ?? []) as LedgerMovement[];
+}
 
 export default async function FinancePage({ searchParams }: PageProps) {
   const { date: dateParam } = await searchParams;
@@ -37,28 +48,43 @@ export default async function FinancePage({ searchParams }: PageProps) {
   const accessProfile = await getProfileAccess(supabase, user.id);
   const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
 
-  const [{ data: movements }, { data: paymentAccounts }] = await Promise.all([
+  const [
+    { data: dayMovements },
+    { data: cumulativeMovements },
+    { data: paymentAccounts },
+    { data: driverJob },
+  ] = await Promise.all([
     supabase
       .from("finance_movements")
-      .select(
-        "id, occurred_at, direction, amount_soles, label, payment_method, source, job_id, jobs(code)",
-      )
+      .select(MOVEMENT_SELECT)
       .eq("user_id", user.id)
       .gte("occurred_at", start)
       .lt("occurred_at", end)
+      .order("occurred_at", { ascending: true }),
+    supabase
+      .from("finance_movements")
+      .select(MOVEMENT_SELECT)
+      .eq("user_id", user.id)
+      .lt("occurred_at", end)
+      .neq("source", "opening_balance")
       .order("occurred_at", { ascending: true }),
     supabase
       .from("user_payment_accounts")
       .select("id, slug, label, sort_order, is_active, user_account_balances(balance_soles)")
       .eq("user_id", user.id)
       .order("sort_order"),
+    supabase.from("jobs").select("id").eq("code", "DRIVER").maybeSingle(),
   ]);
 
-  const rows = (movements ?? []).filter((row) => row.source !== "opening_balance");
-  const incomeRows = rows.filter((row) => row.direction === "in");
-  const expenseRows = rows.filter((row) => row.direction === "out");
-  const income = incomeRows.reduce((t, r) => t + Number(r.amount_soles), 0);
-  const expenses = expenseRows.reduce((t, r) => t + Number(r.amount_soles), 0);
+  const dayRows = asLedgerRows(dayMovements ?? []).filter((row) => row.source !== "opening_balance");
+  const cumulativeRows = asLedgerRows(cumulativeMovements ?? []);
+  const incomeRows = dayRows.filter((row) => row.direction === "in");
+  const expenseRows = dayRows.filter((row) => row.direction === "out");
+
+  const driverJobId = driverJob?.id ?? null;
+  const jobIncomes = summarizeDayIncomeByJob(incomeRows, expenseRows, driverJobId);
+  const foodExpenseTotal = sumFoodExpenses(expenseRows);
+  const totalNet = computeNetBalance(cumulativeRows);
 
   const accounts = (paymentAccounts ?? []).map((row) => {
     const balanceRow = Array.isArray(row.user_account_balances)
@@ -70,11 +96,20 @@ export default async function FinancePage({ searchParams }: PageProps) {
       label: row.label,
       sort_order: row.sort_order,
       is_active: row.is_active,
-      balance_soles: Number(balanceRow?.balance_soles ?? 0),
+      allocated_soles: Number(balanceRow?.balance_soles ?? 0),
     };
   });
 
-  const activeAccounts = sortPaymentAccountsForDisplay(accounts);
+  const activeAccounts = sortPaymentAccountsForDisplay(
+    accounts.map((a) => ({
+      id: a.id,
+      slug: a.slug,
+      label: a.label,
+      sort_order: a.sort_order,
+      is_active: a.is_active,
+      balance_soles: a.allocated_soles,
+    })),
+  ).map(({ id, label }) => ({ id, label }));
 
   return (
     <main className="min-h-dvh bg-sand">
@@ -82,16 +117,19 @@ export default async function FinancePage({ searchParams }: PageProps) {
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
         <DayPicker value={workDate} />
 
-        <div className="mt-4 space-y-4">
-          <WalletBalances accounts={accounts} />
-          <DayBalanceCard totalIncome={income} totalExpense={expenses} />
+        <div className="mt-4">
+          <WalletBalancesEditor workDate={workDate} totalNet={totalNet} accounts={accounts} />
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <DayIncomeSummary jobs={jobIncomes} />
+          <DayFoodExpensesSummary total={foodExpenseTotal} />
         </div>
 
         <div className="mt-6">
-          <JobBalanceSheet
-            incomes={buildIncomeRows(incomeRows)}
-            expenses={buildExpenseItems(expenseRows)}
-            totalExpense={expenses}
+          <FinanceLedgerTable
+            incomes={buildFinanceIncomeRows(incomeRows)}
+            expenses={buildFinanceExpenseRows(expenseRows)}
           />
         </div>
 

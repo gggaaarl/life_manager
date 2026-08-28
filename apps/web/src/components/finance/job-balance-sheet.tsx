@@ -17,27 +17,23 @@ function formatCellAmount(amount: number): string {
 type Props = {
   incomes: SheetIncomeRow[];
   expenses: SheetExpenseItem[];
-  totalExpense: number;
 };
 
-export function JobBalanceSheet({ incomes, expenses, totalExpense }: Props) {
+/** Tabla para dashboard Chofer (mantiene detalle de carreras con barra). */
+export function JobBalanceSheet({ incomes, expenses }: Props) {
   const rowCount = Math.max(incomes.length, expenses.length, 1);
-  const th = "border border-line bg-teal/10 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-ink";
+  const th =
+    "border border-line bg-teal/10 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-ink";
   const td = "border border-line bg-panel px-3 py-2 text-sm";
 
   return (
     <div className="overflow-x-auto rounded-xl border border-line shadow-sm">
-      <table className="w-full min-w-[280px] border-collapse text-sm">
+      <table className="w-full min-w-[320px] border-collapse text-sm">
         <thead>
           <tr>
             <th className={th}>Descripción</th>
-            <th className={th}>Ingresos</th>
-            <th className={`${th} text-right`}>
-              <span className="block text-sm font-bold normal-case tabular-nums text-ink">
-                {formatCellAmount(totalExpense)}
-              </span>
-              <span>Egresos</span>
-            </th>
+            <th className={`${th} text-right`}>Ingresos</th>
+            <th className={th}>Egresos</th>
           </tr>
         </thead>
         <tbody>
@@ -47,14 +43,19 @@ export function JobBalanceSheet({ incomes, expenses, totalExpense }: Props) {
 
             return (
               <tr key={index} className="even:bg-sand/30">
-                <td className={`${td} align-top`}>
-                  {income?.description ?? expense?.label ?? ""}
-                </td>
+                <td className={`${td} align-top`}>{income?.description ?? ""}</td>
                 <td className={`${td} text-right tabular-nums align-top`}>
                   {income ? formatCellAmount(income.amount) : ""}
                 </td>
-                <td className={`${td} text-right tabular-nums align-top`}>
-                  {expense ? formatCellAmount(expense.amount) : ""}
+                <td className={`${td} align-top`}>
+                  {expense ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{expense.label}</span>
+                      <span className="tabular-nums font-medium">
+                        {formatCellAmount(expense.amount)}
+                      </span>
+                    </div>
+                  ) : null}
                 </td>
               </tr>
             );
@@ -85,14 +86,13 @@ export function buildIncomeRows(
     jobs?: { code: string } | { code: string }[] | null;
   }[],
 ): SheetIncomeRow[] {
-  return rows.map((row) => {
-    const job = Array.isArray(row.jobs) ? row.jobs[0] : row.jobs;
-    const jobLabel = jobCodeToSheetLabel(job?.code, row.source);
-    return {
-      description: row.label?.trim() || jobLabel,
-      amount: Number(row.amount_soles),
-    };
-  });
+  return rows.map((row) => ({
+    description: row.label?.trim() || jobCodeToSheetLabel(
+      Array.isArray(row.jobs) ? row.jobs[0]?.code : row.jobs?.code,
+      row.source,
+    ),
+    amount: Number(row.amount_soles),
+  }));
 }
 
 export function buildExpenseItems(

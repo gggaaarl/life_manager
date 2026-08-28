@@ -462,3 +462,62 @@ export async function upsertPaymentAccount(formData: FormData) {
   revalidatePath("/finance/configuracion");
   revalidatePath("/nutrition");
 }
+
+export async function updateExpenseCategory(movementId: string, category: ExpenseCategory) {
+  const { supabase, user } = await requireUser();
+
+  if (category !== "comida" && category !== "bebida") {
+    throw new Error("Solo comida o bebida.");
+  }
+
+  const { error } = await supabase
+    .from("finance_movements")
+    .update({ category })
+    .eq("id", movementId)
+    .eq("user_id", user.id)
+    .in("category", ["comida", "bebida", "comida_bebida"]);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/finance");
+}
+
+export async function updateAccountAllocation(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const accountId = String(formData.get("account_id") ?? "").trim();
+  const amount = parseAmount(formData.get("amount_soles"));
+
+  if (!accountId) {
+    throw new Error("Cuenta inválida.");
+  }
+
+  const { data: account } = await supabase
+    .from("user_payment_accounts")
+    .select("slug")
+    .eq("id", accountId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!account) {
+    throw new Error("Cuenta no encontrada.");
+  }
+
+  if (account.slug === "efectivo") {
+    throw new Error("Efectivo se calcula automáticamente.");
+  }
+
+  const { error } = await supabase.from("user_account_balances").upsert({
+    user_id: user.id,
+    payment_account_id: accountId,
+    balance_soles: amount,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/finance");
+}

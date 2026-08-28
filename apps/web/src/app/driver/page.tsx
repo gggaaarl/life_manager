@@ -99,7 +99,6 @@ export default async function DriverPage({ searchParams }: PageProps) {
           <JobBalanceSheet
             incomes={buildIncomeRows(incomeRows)}
             expenses={buildExpenseItems(expenseRows)}
-            totalExpense={expenses}
           />
         </div>
 

@@ -10,6 +10,7 @@
     "./database": "./src/database.types.ts",
     "./finance/constants": "./src/finance/constants.ts",
     "./finance/summaries": "./src/finance/summaries.ts",
+    "./finance/ledger": "./src/finance/ledger.ts",
     "./finance/food": "./src/finance/food.ts",
     "./game/constants": "./src/game/constants.ts"
   },
