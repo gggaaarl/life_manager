@@ -12,6 +12,7 @@
     "./finance/summaries": "./src/finance/summaries.ts",
     "./finance/ledger": "./src/finance/ledger.ts",
     "./finance/food": "./src/finance/food.ts",
+    "./finance/expense-items": "./src/finance/expense-items.ts",
     "./game/constants": "./src/game/constants.ts"
   },
   "devDependencies": {

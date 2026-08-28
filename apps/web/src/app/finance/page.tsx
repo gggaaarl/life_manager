@@ -53,6 +53,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
     { data: cumulativeMovements },
     { data: paymentAccounts },
     { data: driverJob },
+    { data: expenseItems },
   ] = await Promise.all([
     supabase
       .from("finance_movements")
@@ -74,6 +75,12 @@ export default async function FinancePage({ searchParams }: PageProps) {
       .eq("user_id", user.id)
       .order("sort_order"),
     supabase.from("jobs").select("id").eq("code", "DRIVER").maybeSingle(),
+    supabase
+      .from("expense_items")
+      .select("id, name, brand, default_category, default_price_soles, user_id")
+      .eq("is_active", true)
+      .or(`user_id.is.null,user_id.eq.${user.id}`)
+      .order("name"),
   ]);
 
   const dayRows = asLedgerRows(dayMovements ?? []).filter((row) => row.source !== "opening_balance");
@@ -134,7 +141,18 @@ export default async function FinancePage({ searchParams }: PageProps) {
         </div>
 
         <div className="mt-6">
-          <FinanceForms workDate={workDate} paymentAccounts={activeAccounts} />
+          <FinanceForms
+            workDate={workDate}
+            paymentAccounts={activeAccounts}
+            expenseItems={(expenseItems ?? []).map((row) => ({
+              id: row.id,
+              name: row.name,
+              brand: row.brand,
+              default_category: row.default_category,
+              default_price_soles: Number(row.default_price_soles),
+              user_id: row.user_id,
+            }))}
+          />
         </div>
       </div>
     </main>

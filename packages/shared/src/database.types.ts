@@ -39,6 +39,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      expense_item_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          expense_item_id: string
+          id: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          expense_item_id: string
+          id?: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          expense_item_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_item_aliases_expense_item_id_fkey"
+            columns: ["expense_item_id"]
+            isOneToOne: false
+            referencedRelation: "expense_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_items: {
+        Row: {
+          brand: string | null
+          created_at: string
+          default_category: Database["public"]["Enums"]["expense_category"]
+          default_price_soles: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          default_category?: Database["public"]["Enums"]["expense_category"]
+          default_price_soles?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          default_category?: Database["public"]["Enums"]["expense_category"]
+          default_price_soles?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_movements: {
         Row: {
           affects_wallet: boolean
@@ -46,6 +119,7 @@ export type Database = {
           category: Database["public"]["Enums"]["expense_category"] | null
           created_at: string
           direction: Database["public"]["Enums"]["movement_direction"]
+          expense_item_id: string | null
           food_item_id: string | null
           id: string
           job_id: string | null
@@ -65,6 +139,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["expense_category"] | null
           created_at?: string
           direction: Database["public"]["Enums"]["movement_direction"]
+          expense_item_id?: string | null
           food_item_id?: string | null
           id?: string
           job_id?: string | null
@@ -84,6 +159,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["expense_category"] | null
           created_at?: string
           direction?: Database["public"]["Enums"]["movement_direction"]
+          expense_item_id?: string | null
           food_item_id?: string | null
           id?: string
           job_id?: string | null
@@ -98,6 +174,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_movements_expense_item_id_fkey"
+            columns: ["expense_item_id"]
+            isOneToOne: false
+            referencedRelation: "expense_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "finance_movements_food_item_id_fkey"
             columns: ["food_item_id"]

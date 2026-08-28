@@ -13,6 +13,7 @@ import {
 } from "@life-manager/shared/finance/constants";
 import { computeFoodLogValues } from "@life-manager/shared/finance/food";
 import { parseFormDateTime } from "@life-manager/shared/finance/summaries";
+import { normalizeExpenseLabel } from "@life-manager/shared/finance/expense-items";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -80,6 +81,98 @@ async function getDriverJobId(supabase: Awaited<ReturnType<typeof createClient>>
     throw new Error("Job Chofer no configurado.");
   }
   return job.id;
+}
+
+type ResolvedExpenseItem = {
+  id: string;
+  name: string;
+  default_category: ExpenseCategory;
+};
+
+async function resolveExpenseItem(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  rawLabel: string,
+  category: ExpenseCategory,
+  amountSoles: number,
+  explicitItemId?: string | null,
+): Promise<ResolvedExpenseItem> {
+  if (explicitItemId) {
+    const { data: picked, error } = await supabase
+      .from("expense_items")
+      .select("id, name, default_category")
+      .eq("id", explicitItemId)
+      .or(`user_id.is.null,user_id.eq.${userId}`)
+      .maybeSingle();
+
+    if (error || !picked) {
+      throw new Error("Ítem de gasto no encontrado.");
+    }
+
+    return {
+      id: picked.id,
+      name: picked.name,
+      default_category: picked.default_category as ExpenseCategory,
+    };
+  }
+
+  const label = rawLabel.trim();
+  const normalized = normalizeExpenseLabel(label);
+
+  const { data: aliasHit } = await supabase
+    .from("expense_item_aliases")
+    .select("expense_item_id, expense_items(id, name, default_category)")
+    .ilike("alias", normalized)
+    .maybeSingle();
+
+  const aliasRow = aliasHit?.expense_items;
+  const aliasItem = Array.isArray(aliasRow) ? aliasRow[0] : aliasRow;
+  if (aliasItem) {
+    return {
+      id: aliasItem.id,
+      name: aliasItem.name,
+      default_category: aliasItem.default_category as ExpenseCategory,
+    };
+  }
+
+  const { data: catalogItems } = await supabase
+    .from("expense_items")
+    .select("id, name, default_category")
+    .or(`user_id.is.null,user_id.eq.${userId}`)
+    .eq("default_category", category)
+    .eq("is_active", true);
+
+  const nameMatch = (catalogItems ?? []).find(
+    (item) => normalizeExpenseLabel(item.name) === normalized,
+  );
+  if (nameMatch) {
+    return {
+      id: nameMatch.id,
+      name: nameMatch.name,
+      default_category: nameMatch.default_category as ExpenseCategory,
+    };
+  }
+
+  const { data: created, error: createError } = await supabase
+    .from("expense_items")
+    .insert({
+      user_id: userId,
+      name: label,
+      default_category: category,
+      default_price_soles: amountSoles,
+    })
+    .select("id, name, default_category")
+    .single();
+
+  if (createError || !created) {
+    throw new Error(createError?.message ?? "No se pudo crear el ítem de gasto.");
+  }
+
+  return {
+    id: created.id,
+    name: created.name,
+    default_category: created.default_category as ExpenseCategory,
+  };
 }
 
 export async function logFoodFromItem(formData: FormData) {
@@ -186,18 +279,31 @@ export async function logManualExpense(formData: FormData) {
     throw new Error("Descripción obligatoria.");
   }
 
+  const category = parseCategory(formData.get("category")) ?? "otro";
+  const amountSoles = parseAmount(formData.get("amount_soles"));
   const paymentAccountId = parsePaymentAccountId(formData.get("payment_account_id"));
+  const expenseItemId = String(formData.get("expense_item_id") ?? "").trim() || null;
+
+  const item = await resolveExpenseItem(
+    supabase,
+    user.id,
+    label,
+    category,
+    amountSoles,
+    expenseItemId,
+  );
 
   const { error } = await supabase.from("finance_movements").insert({
     user_id: user.id,
     occurred_at: parseOccurredAt(formData),
     direction: "out",
-    amount_soles: parseAmount(formData.get("amount_soles")),
+    amount_soles: amountSoles,
     payment_method: parsePaymentMethod(formData.get("payment_method")),
     payment_account_id: paymentAccountId,
     source: "expense",
-    category: parseCategory(formData.get("category")) ?? "otro",
-    label,
+    category: item.default_category,
+    expense_item_id: item.id,
+    label: item.name,
     notes: String(formData.get("notes") ?? "").trim() || null,
   });
 
