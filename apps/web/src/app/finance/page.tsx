@@ -12,7 +12,7 @@ import {
   buildFinanceIncomeRows,
   computeNetBalance,
   summarizeDayIncomeByJob,
-  sumFoodExpenses,
+  sumPersonalDayExpenses,
   type LedgerMovement,
 } from "@life-manager/shared/finance/ledger";
 import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
@@ -83,7 +83,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
 
   const driverJobId = driverJob?.id ?? null;
   const jobIncomes = summarizeDayIncomeByJob(incomeRows, expenseRows, driverJobId);
-  const foodExpenseTotal = sumFoodExpenses(expenseRows);
+  const personalExpenseTotal = sumPersonalDayExpenses(expenseRows);
   const totalNet = computeNetBalance(cumulativeRows);
 
   const accounts = (paymentAccounts ?? []).map((row) => {
@@ -123,7 +123,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <DayIncomeSummary jobs={jobIncomes} />
-          <DayFoodExpensesSummary total={foodExpenseTotal} />
+          <DayFoodExpensesSummary total={personalExpenseTotal} />
         </div>
 
         <div className="mt-6">

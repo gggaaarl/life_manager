@@ -28,14 +28,26 @@ export function resolveJobCode(row: LedgerMovement): string {
   return job?.code ?? (row.source === "driver_income" || row.source === "driver_expense" ? "DRIVER" : "other");
 }
 
-export function isFoodExpense(row: LedgerMovement): boolean {
+export function isPersonalFinanceExpense(row: LedgerMovement): boolean {
   if (row.direction !== "out") return false;
-  if (row.source === "food") return true;
-  return (
-    row.category === "comida" ||
-    row.category === "bebida" ||
-    row.category === "comida_bebida"
-  );
+  if (row.source === "driver_expense") return false;
+  return row.source === "expense" || row.source === "food";
+}
+
+/** @deprecated Usar isPersonalFinanceExpense */
+export function isFoodExpense(row: LedgerMovement): boolean {
+  return isPersonalFinanceExpense(row);
+}
+
+export function sumPersonalDayExpenses(expenses: LedgerMovement[]): number {
+  return expenses
+    .filter(isPersonalFinanceExpense)
+    .reduce((t, row) => t + Number(row.amount_soles), 0);
+}
+
+/** @deprecated Usar sumPersonalDayExpenses */
+export function sumFoodExpenses(expenses: LedgerMovement[]): number {
+  return sumPersonalDayExpenses(expenses);
 }
 
 export function isDriverJobExpense(row: LedgerMovement, driverJobId: string | null): boolean {
@@ -102,10 +114,6 @@ export function summarizeDayIncomeByJob(
     }));
 }
 
-export function sumFoodExpenses(expenses: LedgerMovement[]): number {
-  return expenses.filter(isFoodExpense).reduce((t, row) => t + Number(row.amount_soles), 0);
-}
-
 export type SheetExpenseRow = {
   id: string;
   label: string;
@@ -120,7 +128,7 @@ export function buildFinanceExpenseRows(expenses: LedgerMovement[]): SheetExpens
     label: row.label,
     amount: Number(row.amount_soles),
     category: row.category,
-    editableCategory: isFoodExpense(row),
+    editableCategory: isPersonalFinanceExpense(row),
   }));
 }
 

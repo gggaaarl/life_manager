@@ -29,8 +29,13 @@ export function MovementRowActions({
   const [pending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const foodCategory =
-    category === "comida" || category === "bebida"
+  const expenseCategory: ExpenseCategory =
+    category === "comida" ||
+    category === "bebida" ||
+    category === "medicina" ||
+    category === "higiene" ||
+    category === "ocio" ||
+    category === "otro"
       ? category
       : category === "comida_bebida"
         ? "comida"
@@ -125,10 +130,10 @@ export function MovementRowActions({
             {editableCategory ? (
               <select
                 name="category"
-                defaultValue={foodCategory}
+                defaultValue={expenseCategory}
                 className="w-full rounded border border-line bg-sand px-2 py-1.5 text-sm"
               >
-                {FINANCE_MANUAL_EXPENSE_CATEGORIES.filter((c) => c !== "otro").map((value) => (
+                {FINANCE_MANUAL_EXPENSE_CATEGORIES.map((value) => (
                   <option key={value} value={value}>
                     {EXPENSE_CATEGORY_LABELS[value]}
                   </option>

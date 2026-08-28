@@ -10,6 +10,9 @@ export const MOVEMENT_SOURCES = [
 export const EXPENSE_CATEGORIES = [
   "comida",
   "bebida",
+  "medicina",
+  "higiene",
+  "ocio",
   "comida_bebida",
   "combustible_gnv",
   "combustible_gasolina",
@@ -20,7 +23,14 @@ export const EXPENSE_CATEGORIES = [
 ] as const;
 
 /** Gastos manuales en dashboard Finanzas. */
-export const FINANCE_MANUAL_EXPENSE_CATEGORIES = ["comida", "bebida", "otro"] as const satisfies readonly ExpenseCategory[];
+export const FINANCE_MANUAL_EXPENSE_CATEGORIES = [
+  "comida",
+  "bebida",
+  "medicina",
+  "higiene",
+  "ocio",
+  "otro",
+] as const satisfies readonly ExpenseCategory[];
 
 /** Gastos en dashboard Chofer / taxi. */
 export const DRIVER_EXPENSE_CATEGORIES = [
@@ -45,6 +55,9 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   comida: "Comida",
   bebida: "Bebida",
+  medicina: "Medicina",
+  higiene: "Higiene",
+  ocio: "Ocio",
   comida_bebida: "Comida / bebida",
   combustible_gnv: "GNV",
   combustible_gasolina: "Gasolina",

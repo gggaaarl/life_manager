@@ -9,6 +9,7 @@ import {
   type PaymentMethod,
   DRIVER_EXPENSE_CATEGORY_LABELS,
   EXPENSE_CATEGORY_LABELS,
+  FINANCE_MANUAL_EXPENSE_CATEGORIES,
 } from "@life-manager/shared/finance/constants";
 import { computeFoodLogValues } from "@life-manager/shared/finance/food";
 import { parseFormDateTime } from "@life-manager/shared/finance/summaries";
@@ -392,7 +393,7 @@ export async function updateMovement(formData: FormData) {
   } = { label, amount_soles: amount };
 
   if (categoryRaw) {
-    if (categoryRaw !== "comida" && categoryRaw !== "bebida") {
+    if (!FINANCE_MANUAL_EXPENSE_CATEGORIES.includes(categoryRaw as (typeof FINANCE_MANUAL_EXPENSE_CATEGORIES)[number])) {
       throw new Error("Categoría inválida.");
     }
     patch.category = categoryRaw as ExpenseCategory;
@@ -437,8 +438,8 @@ export async function deleteMovement(movementId: string) {
 export async function updateExpenseCategory(movementId: string, category: ExpenseCategory) {
   const { supabase, user } = await requireUser();
 
-  if (category !== "comida" && category !== "bebida") {
-    throw new Error("Solo comida o bebida.");
+  if (!FINANCE_MANUAL_EXPENSE_CATEGORIES.includes(category as (typeof FINANCE_MANUAL_EXPENSE_CATEGORIES)[number])) {
+    throw new Error("Categoría no válida para gasto personal.");
   }
 
   const { error } = await supabase
@@ -446,7 +447,7 @@ export async function updateExpenseCategory(movementId: string, category: Expens
     .update({ category })
     .eq("id", movementId)
     .eq("user_id", user.id)
-    .in("category", ["comida", "bebida", "comida_bebida"]);
+    .in("source", ["expense", "food"]);
 
   if (error) {
     throw new Error(error.message);

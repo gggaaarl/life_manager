@@ -71,17 +71,24 @@ function IncomeCell({ income }: { income: SheetIncomeRow }) {
   );
 }
 
+function financeCategoryValue(category: string | null): ExpenseCategory {
+  if (
+    category === "comida" ||
+    category === "bebida" ||
+    category === "medicina" ||
+    category === "higiene" ||
+    category === "ocio" ||
+    category === "otro"
+  ) {
+    return category;
+  }
+  if (category === "comida_bebida") return "comida";
+  return "otro";
+}
+
 function ExpenseCell({ expense }: { expense: SheetExpenseRow }) {
   const [pending, startTransition] = useTransition();
-
-  const category =
-    expense.category === "comida" ||
-    expense.category === "bebida" ||
-    expense.category === "comida_bebida"
-      ? expense.category === "comida_bebida"
-        ? "comida"
-        : expense.category
-      : null;
+  const category = financeCategoryValue(expense.category);
 
   return (
     <div className="flex flex-col gap-1">
@@ -99,7 +106,7 @@ function ExpenseCell({ expense }: { expense: SheetExpenseRow }) {
         {expense.editableCategory ? (
           <select
             disabled={pending}
-            defaultValue={category ?? "comida"}
+            defaultValue={category}
             className="max-w-[7rem] rounded border border-line bg-sand px-2 py-0.5 text-xs disabled:opacity-60"
             onChange={(event) => {
               const value = event.target.value as ExpenseCategory;
@@ -108,7 +115,7 @@ function ExpenseCell({ expense }: { expense: SheetExpenseRow }) {
               });
             }}
           >
-            {FINANCE_MANUAL_EXPENSE_CATEGORIES.filter((c) => c !== "otro").map((value) => (
+            {FINANCE_MANUAL_EXPENSE_CATEGORIES.map((value) => (
               <option key={value} value={value}>
                 {EXPENSE_CATEGORY_LABELS[value]}
               </option>
