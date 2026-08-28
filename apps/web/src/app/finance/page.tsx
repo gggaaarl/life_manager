@@ -1,19 +1,14 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { FinanceForms } from "@/components/finance/finance-forms";
-import { MovementLedger } from "@/components/finance/movement-ledger";
-import { OpeningBalanceForm } from "@/components/finance/opening-balance-form";
-import { WalletBalances } from "@/components/finance/wallet-balances";
+import {
+  buildExpenseItems,
+  buildJobGroups,
+  JobBalanceSheet,
+} from "@/components/finance/job-balance-sheet";
 import { DayPicker } from "@/components/driver/day-picker";
 import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
 import {
-  formatSoles,
-  PAYMENT_METHOD_LABELS,
-} from "@life-manager/shared/finance/constants";
-import {
   dayRangeInLima,
-  sumExpensesToday,
-  sumIncomeByPayment,
-  sumIncomeToday,
   todayInLima,
 } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
@@ -43,101 +38,43 @@ export default async function FinancePage({ searchParams }: PageProps) {
   const { data: movements } = await supabase
     .from("finance_movements")
     .select(
-      "id, occurred_at, direction, amount_soles, kcal, label, payment_method, source, category, gnv_bar",
+      "id, occurred_at, direction, amount_soles, label, payment_method, source, job_id, jobs(code)",
     )
     .eq("user_id", user.id)
     .gte("occurred_at", start)
     .lt("occurred_at", end)
-    .order("occurred_at", { ascending: false });
-
-  const { data: wallets } = await supabase
-    .from("user_wallet_balances")
-    .select("payment_method, balance_soles")
-    .eq("user_id", user.id);
-
-  const { count: openingCount } = await supabase
-    .from("finance_movements")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("source", "opening_balance");
+    .order("occurred_at", { ascending: true });
 
   const rows = movements ?? [];
-  const expenses = sumExpensesToday(rows);
-  const income = sumIncomeToday(rows);
-  const byPayment = sumIncomeByPayment(rows);
+  const incomeRows = rows.filter((row) => row.direction === "in");
+  const expenseRows = rows.filter((row) => row.direction === "out");
+  const income = incomeRows.reduce((t, r) => t + Number(r.amount_soles), 0);
+  const expenses = expenseRows.reduce((t, r) => t + Number(r.amount_soles), 0);
 
   return (
     <main className="min-h-dvh bg-sand">
       <AppHeader showPlayerMenu showFinanceMenu showNutritionMenu />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        <div className="mb-6 grid grid-cols-2 gap-4">
-          <StatCard label="Ingresos" value={formatSoles(income)} tone="forest" />
-          <StatCard label="Gastos" value={formatSoles(expenses)} />
-        </div>
-        <div className="mb-6">
-          <StatCard label="Balance" value={formatSoles(income - expenses)} />
-        </div>
+        <JobBalanceSheet
+          workDate={workDate}
+          totalIncome={income}
+          totalExpense={expenses}
+          jobs={buildJobGroups(incomeRows)}
+          expenses={buildExpenseItems(expenseRows)}
+        />
 
-        <Link href="/home" className="text-sm font-medium text-teal">
-          ← Hub
-        </Link>
-        <div className="mt-3 mb-6">
-          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold text-ink">
-            Finanzas
-          </h1>
-        </div>
-
-        <div className="mb-6">
+        <div className="mt-6">
           <DayPicker value={workDate} />
         </div>
 
-        <div className="mb-6 space-y-4">
-          <WalletBalances wallets={wallets ?? []} />
-          <OpeningBalanceForm hasOpeningBalance={(openingCount ?? 0) > 0} />
+        <Link href="/home" className="mt-4 inline-block text-sm font-medium text-teal">
+          ← Hub
+        </Link>
+
+        <div className="mt-6">
+          <FinanceForms workDate={workDate} />
         </div>
-
-        <div className="mb-6 rounded-2xl bg-panel p-5 border border-line/60">
-          <p className="mb-3 font-medium text-ink">Ingresos por método</p>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {(["yape", "plin", "efectivo"] as const).map((method) => (
-              <div key={method} className="rounded-xl bg-sand px-3 py-2 text-sm">
-                <p className="text-muted">{PAYMENT_METHOD_LABELS[method]}</p>
-                <p className="font-semibold text-ink">{formatSoles(byPayment[method])}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <FinanceForms workDate={workDate} />
-
-        <section className="mt-6 rounded-2xl bg-panel p-5 border border-line/60">
-          <p className="mb-3 font-medium text-ink">Movimientos del día</p>
-          <MovementLedger rows={rows} showGnvBar emptyMessage="Sin movimientos este día." />
-        </section>
       </div>
     </main>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  tone = "ink",
-}: {
-  label: string;
-  value: string;
-  tone?: "ink" | "forest";
-}) {
-  return (
-    <div className="rounded-2xl bg-panel p-5 border border-line/60">
-      <p className="text-sm text-muted">{label}</p>
-      <p
-        className={`mt-1 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl ${
-          tone === "forest" ? "text-forest" : "text-ink"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
   );
 }
