@@ -730,6 +730,9 @@ export type Database = {
         | "higiene"
         | "ocio"
         | "bano"
+        | "pago_mensual"
+        | "pago_trimestral"
+        | "pago_no_fijo"
       job_status: "locked" | "unlocked" | "active"
       movement_direction: "in" | "out"
       movement_source:
@@ -893,6 +896,9 @@ export const Constants = {
         "higiene",
         "ocio",
         "bano",
+        "pago_mensual",
+        "pago_trimestral",
+        "pago_no_fijo",
       ],
       job_status: ["locked", "unlocked", "active"],
       movement_direction: ["in", "out"],

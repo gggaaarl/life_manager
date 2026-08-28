@@ -20,6 +20,9 @@ export const EXPENSE_CATEGORIES = [
   "llantas",
   "mantenimiento",
   "bano",
+  "pago_mensual",
+  "pago_trimestral",
+  "pago_no_fijo",
   "otro",
 ] as const;
 
@@ -30,6 +33,9 @@ export const FINANCE_MANUAL_EXPENSE_CATEGORIES = [
   "medicina",
   "higiene",
   "ocio",
+  "pago_mensual",
+  "pago_trimestral",
+  "pago_no_fijo",
   "otro",
 ] as const satisfies readonly ExpenseCategory[];
 
@@ -67,6 +73,9 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   llantas: "Llantas",
   mantenimiento: "Mantenimiento",
   bano: "Baño",
+  pago_mensual: "Pago mensual",
+  pago_trimestral: "Pago trimestral",
+  pago_no_fijo: "Pago no fijo",
   otro: "Otro",
 };
 

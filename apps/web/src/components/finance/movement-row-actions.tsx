@@ -8,6 +8,13 @@ import {
   type ExpenseCategory,
 } from "@life-manager/shared/finance/constants";
 
+function isFinanceManualCategory(category: string | null | undefined): category is ExpenseCategory {
+  return (
+    category != null &&
+    FINANCE_MANUAL_EXPENSE_CATEGORIES.includes(category as (typeof FINANCE_MANUAL_EXPENSE_CATEGORIES)[number])
+  );
+}
+
 type Props = {
   movementId: string;
   label: string;
@@ -29,17 +36,11 @@ export function MovementRowActions({
   const [pending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const expenseCategory: ExpenseCategory =
-    category === "comida" ||
-    category === "bebida" ||
-    category === "medicina" ||
-    category === "higiene" ||
-    category === "ocio" ||
-    category === "otro"
-      ? category
-      : category === "comida_bebida"
-        ? "comida"
-        : "comida";
+  const expenseCategory: ExpenseCategory = isFinanceManualCategory(category)
+    ? category
+    : category === "comida_bebida"
+      ? "comida"
+      : "comida";
 
   useEffect(() => {
     if (!open) return;

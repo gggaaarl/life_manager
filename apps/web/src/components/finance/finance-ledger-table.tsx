@@ -71,15 +71,15 @@ function IncomeCell({ income }: { income: SheetIncomeRow }) {
   );
 }
 
+function isFinanceManualCategory(category: string | null): category is (typeof FINANCE_MANUAL_EXPENSE_CATEGORIES)[number] {
+  return (
+    category != null &&
+    FINANCE_MANUAL_EXPENSE_CATEGORIES.includes(category as (typeof FINANCE_MANUAL_EXPENSE_CATEGORIES)[number])
+  );
+}
+
 function financeCategoryValue(category: string | null): ExpenseCategory {
-  if (
-    category === "comida" ||
-    category === "bebida" ||
-    category === "medicina" ||
-    category === "higiene" ||
-    category === "ocio" ||
-    category === "otro"
-  ) {
+  if (isFinanceManualCategory(category)) {
     return category;
   }
   if (category === "comida_bebida") return "comida";
