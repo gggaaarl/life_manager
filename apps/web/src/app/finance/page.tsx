@@ -1,5 +1,4 @@
 import { AppHeader } from "@/components/layout/app-header";
-import { FinanceNavTabs } from "@/components/finance/finance-nav-tabs";
 import { DayFoodExpensesSummary } from "@/components/finance/day-food-expenses-summary";
 import { DayIncomeSummary } from "@/components/finance/day-income-summary";
 import { FinanceForms } from "@/components/finance/finance-forms";
@@ -116,10 +115,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
     <main className="min-h-dvh bg-sand">
       <AppHeader userJobs={userJobs} />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        <FinanceNavTabs />
-        <div className="mt-4">
-          <DayPicker value={workDate} />
-        </div>
+        <DayPicker value={workDate} />
 
         <div className="mt-4">
           <WalletBalancesEditor

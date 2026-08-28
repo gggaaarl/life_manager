@@ -7,9 +7,10 @@ Aplicación tipo juego de vida: el usuario desbloquea **JOBS**, registra activid
 ## Empieza aquí
 
 1. **[Guía de estudio](./estudio/README.md)** — arquitectura, despliegue, datos, diseño (leer desde celular)
-2. **[Historial del setup](./historial-setup.md)** — todo lo hecho, errores y cómo se arreglaron  
-3. **[Deploy + Google](./deploy-vercel-google.md)** — URLs y OAuth local/prod  
-4. **[Jobs](./jobs.md)** — TRAINEE / DRIVER / PLAYER  
+2. **[Navegación](./navegacion.md)** — menú Finanzas / config / jobs (contrato UI)
+3. **[Historial del setup](./historial-setup.md)** — todo lo hecho, errores y cómo se arreglaron  
+4. **[Deploy + Google](./deploy-vercel-google.md)** — URLs y OAuth local/prod  
+5. **[Jobs](./jobs.md)** — TRAINEE / DRIVER / PLAYER  
 
 ## Índice
 
@@ -24,6 +25,7 @@ Aplicación tipo juego de vida: el usuario desbloquea **JOBS**, registra activid
 | [Historial del setup](./historial-setup.md) | Del cero al login OK (maestro) |
 | [Arquitectura](./arquitectura.md) | Monorepo, clientes, backend, amarras Vercel/Expo/Supabase |
 | [App móvil](./mobile-setup.md) | Expo, Google auth, build APK |
+| [Navegación](./navegacion.md) | Header Finanzas ▾, config aparte, cómo pedir UI |
 | [Jobs](./jobs.md) | TRAINEE / DRIVER / PLAYER + `user_jobs` |
 | [Job PLAYER — Citas](./job-player-citas.md) | Citas, categorías, puntajes, comentarios |
 | [Esquema de base de datos](./esquema-db.md) | Tablas, enums, relaciones |

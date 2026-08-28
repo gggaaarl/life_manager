@@ -1,5 +1,4 @@
 import { AppHeader } from "@/components/layout/app-header";
-import { FinanceNavTabs } from "@/components/finance/finance-nav-tabs";
 import { PaymentAccountsSettings } from "@/components/finance/payment-accounts-settings";
 import { sortPaymentAccountsForDisplay } from "@/components/finance/sort-payment-accounts";
 import { getUserNavJobs } from "@/lib/nav/get-user-nav-jobs";
@@ -38,9 +37,8 @@ export default async function FinanceConfigPage() {
     <main className="min-h-dvh bg-sand">
       <AppHeader userJobs={userJobs} />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
-        <FinanceNavTabs />
-        <h1 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
-          Configuración
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+          Configuración de finanzas
         </h1>
         <p className="mt-1 text-sm text-muted">
           Activa las cuentas que usas y agrega nuevas (ej. BBVA · mamá, SIP · mamá).

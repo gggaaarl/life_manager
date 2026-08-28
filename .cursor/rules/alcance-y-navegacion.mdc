@@ -1,0 +1,44 @@
+---
+description: Alcance estricto, menú de finanzas y cómo leer prompts de Guisela
+alwaysApply: true
+---
+
+# Alcance y navegación
+
+Guisela pide cambios puntuales. El agente no “mejora” layout, menú ni pantallas de paso.
+
+## No tocar si no lo pidió
+
+- No agregar pestañas, cards, links, submenús ni reorganizar UI existente.
+- No quitar un control de navegación para “simplificar” o porque otra tarea tocó el header.
+- Si un prompt pide A (jobs, landing, seed) y el header ya tiene B (Configuración de finanzas), B se queda igual.
+
+## Contrato de menú (no reinterpretar)
+
+Header `AppHeader`:
+
+- **Finanzas ▾** (dropdown del header, no tabs dentro de la página)
+  - Movimientos → `/finance` (vista diaria; sin tabs internas)
+  - Configuración de finanzas → `/finance/configuracion` (página aparte)
+- **Mis trabajos ▾** → jobs activos
+- Configuración **nunca** va dentro de `/finance` como pestaña Movimientos | Configuración.
+
+“Submenú / tabulado / indentado / como hijo de Finanzas” = ítem del **dropdown del header**. No significa tabs in-page.
+
+## Cómo leer sus prompts
+
+Sus mensajes mezclan varias tareas y usan español coloquial. Antes de editar:
+
+1. Listar cada pedido como ítem separado. Implementar solo esos.
+2. Si una palabra es ambigua (`tabulado` = pestaña UI vs submenú), elegir la lectura que **no mueva** navegación ya acordada. Si hace falta, preguntar una línea.
+3. No traducir “menú aparte” a tabs dentro de la vista actual.
+4. Un prompt con 3 pedidos no autoriza rediseñar el chrome (header, landing, tabs) salvo el punto que lo nombra.
+
+## Fallo real (2026-08-28)
+
+Prompt: “configuracion de finanzas salga tabulado para que se identifique como sub menu de finanzas”.
+
+- Lectura correcta: dropdown Finanzas → Configuración de finanzas.
+- Lectura errónea: tabs Movimientos | Configuración dentro de `/finance`, y se borró el ítem del header.
+
+No repetir.

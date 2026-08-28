@@ -10,22 +10,34 @@ type Props = {
   userJobs?: NavJob[];
 };
 
+const FINANCE_LINKS = [
+  { href: "/finance", label: "Movimientos", exact: true },
+  { href: "/finance/configuracion", label: "Configuración de finanzas", exact: false },
+] as const;
+
 export function AppHeader({ userJobs = [] }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [financeOpen, setFinanceOpen] = useState(false);
   const [jobsOpen, setJobsOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const financeRef = useRef<HTMLDivElement>(null);
   const jobsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOpen(false);
+    setFinanceOpen(false);
     setJobsOpen(false);
   }, [pathname]);
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
-      if (jobsRef.current && !jobsRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (financeRef.current && !financeRef.current.contains(target)) {
+        setFinanceOpen(false);
+      }
+      if (jobsRef.current && !jobsRef.current.contains(target)) {
         setJobsOpen(false);
       }
     }
@@ -59,22 +71,54 @@ export function AppHeader({ userJobs = [] }: Props) {
         </Link>
 
         <nav className="hidden items-center justify-end gap-1 md:flex">
-          <Link
-            href="/finance"
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-              financeActive
-                ? "bg-teal/15 text-teal"
-                : "text-muted hover:bg-panel-hover hover:text-ink"
-            }`}
-          >
-            Finanzas
-          </Link>
+          <div ref={financeRef} className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setFinanceOpen((value) => !value);
+                setJobsOpen(false);
+              }}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                financeActive || financeOpen
+                  ? "bg-teal/15 text-teal"
+                  : "text-muted hover:bg-panel-hover hover:text-ink"
+              }`}
+              aria-expanded={financeOpen}
+            >
+              Finanzas ▾
+            </button>
+            {financeOpen ? (
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-[14rem] rounded-lg border border-line bg-panel py-1 shadow-lg">
+                {FINANCE_LINKS.map((link) => {
+                  const active = link.exact
+                    ? pathname === link.href
+                    : pathname === link.href || pathname.startsWith(`${link.href}/`);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`block px-4 py-2 text-sm ${
+                        active
+                          ? "bg-teal/10 font-medium text-teal"
+                          : "text-ink hover:bg-sand/80"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
 
           {userJobs.length > 0 ? (
             <div ref={jobsRef} className="relative">
               <button
                 type="button"
-                onClick={() => setJobsOpen((value) => !value)}
+                onClick={() => {
+                  setJobsOpen((value) => !value);
+                  setFinanceOpen(false);
+                }}
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                   jobsActive || jobsOpen
                     ? "bg-teal/15 text-teal"
@@ -132,14 +176,25 @@ export function AppHeader({ userJobs = [] }: Props) {
       {open ? (
         <div className="border-t border-line bg-panel md:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col px-4 py-3 sm:px-6">
-            <Link
-              href="/finance"
-              className={`rounded-lg px-3 py-3 text-sm font-medium ${
-                financeActive ? "bg-teal/15 text-teal" : "text-ink"
-              }`}
-            >
+            <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted">
               Finanzas
-            </Link>
+            </p>
+            {FINANCE_LINKS.map((link) => {
+              const active = link.exact
+                ? pathname === link.href
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`rounded-lg px-5 py-2.5 text-sm ${
+                    active ? "bg-teal/15 font-medium text-teal" : "text-ink"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
             {userJobs.length > 0 ? (
               <>
                 <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted">
