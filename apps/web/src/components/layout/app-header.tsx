@@ -7,9 +7,17 @@ import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   showPlayerMenu?: boolean;
+  showNutritionMenu?: boolean;
+  showFinanceMenu?: boolean;
+  showDriverMenu?: boolean;
 };
 
-export function AppHeader({ showPlayerMenu = false }: Props) {
+export function AppHeader({
+  showPlayerMenu = false,
+  showNutritionMenu = false,
+  showFinanceMenu = false,
+  showDriverMenu = false,
+}: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -29,19 +37,20 @@ export function AppHeader({ showPlayerMenu = false }: Props) {
 
   const links = [
     { href: "/home", label: "Hub" },
-    ...(showPlayerMenu
-      ? [{ href: "/player/citas", label: "Salidas" }]
-      : []),
+    ...(showNutritionMenu ? [{ href: "/nutrition", label: "Nutrición" }] : []),
+    ...(showFinanceMenu ? [{ href: "/finance", label: "Finanzas" }] : []),
+    ...(showDriverMenu ? [{ href: "/driver", label: "Chofer" }] : []),
+    ...(showPlayerMenu ? [{ href: "/player/citas", label: "Salidas" }] : []),
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/80 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-line bg-panel/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/home"
-          className="font-[family-name:var(--font-display)] text-sm font-bold tracking-[0.14em] text-teal"
+          className="font-[family-name:var(--font-display)] text-xs font-bold tracking-[0.08em] text-mint sm:text-sm"
         >
-          LIFE MANAGER
+          naturaleza<span className="text-teal">CRUEL</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -54,8 +63,8 @@ export function AppHeader({ showPlayerMenu = false }: Props) {
                 href={link.href}
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                   active
-                    ? "bg-sand text-ink"
-                    : "text-muted hover:bg-sand/70 hover:text-ink"
+                    ? "bg-teal/15 text-mint"
+                    : "text-muted hover:bg-panel-hover hover:text-ink"
                 }`}
               >
                 {link.label}
@@ -66,7 +75,7 @@ export function AppHeader({ showPlayerMenu = false }: Props) {
             type="button"
             onClick={signOut}
             disabled={signingOut}
-            className="ml-2 rounded-lg px-3 py-2 text-sm text-muted transition hover:bg-sand/70 hover:text-ink disabled:opacity-60"
+            className="ml-2 rounded-lg px-3 py-2 text-sm text-muted transition hover:bg-panel-hover hover:text-ink disabled:opacity-60"
           >
             {signingOut ? "Saliendo…" : "Cerrar sesión"}
           </button>
@@ -84,7 +93,7 @@ export function AppHeader({ showPlayerMenu = false }: Props) {
       </div>
 
       {open ? (
-        <div className="border-t border-line bg-white md:hidden">
+        <div className="border-t border-line bg-panel md:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col px-4 py-3 sm:px-6">
             {links.map((link) => {
               const active =
@@ -94,7 +103,7 @@ export function AppHeader({ showPlayerMenu = false }: Props) {
                   key={link.href}
                   href={link.href}
                   className={`rounded-lg px-3 py-3 text-sm font-medium ${
-                    active ? "bg-sand text-ink" : "text-ink"
+                    active ? "bg-teal/15 text-mint" : "text-ink"
                   }`}
                 >
                   {link.label}

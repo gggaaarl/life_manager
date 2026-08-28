@@ -22,7 +22,8 @@ Aplicación tipo juego de vida: el usuario desbloquea **JOBS**, registra activid
 | [Estudio — diccionario datos](./estudio/diccionario-datos.md) | Tablas y enums |
 | [Estudio — manual diseño](./estudio/manual-diseno.md) | CSS, Tailwind, badges |
 | [Historial del setup](./historial-setup.md) | Del cero al login OK (maestro) |
-| [Arquitectura](./arquitectura.md) | Monorepo, clientes, backend, auth |
+| [Arquitectura](./arquitectura.md) | Monorepo, clientes, backend, amarras Vercel/Expo/Supabase |
+| [App móvil](./mobile-setup.md) | Expo, Google auth, build APK |
 | [Jobs](./jobs.md) | TRAINEE / DRIVER / PLAYER + `user_jobs` |
 | [Job PLAYER — Citas](./job-player-citas.md) | Citas, categorías, puntajes, comentarios |
 | [Esquema de base de datos](./esquema-db.md) | Tablas, enums, relaciones |

@@ -14,136 +14,63 @@ export default async function LoginPage({ searchParams }: Props) {
         : undefined;
 
   return (
-    <main className="grid min-h-dvh lg:grid-cols-[1.15fr_1fr]">
-      {/* Brand panel — hero composition */}
-      <section className="relative hidden overflow-hidden lg:flex">
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(145deg, #0b1f1c 0%, #0f3d36 42%, #1f8a7a 100%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 20% 20%, rgba(125,222,203,0.35), transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.12), transparent 35%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-          }}
-        />
+    <main className="relative min-h-dvh overflow-hidden bg-void text-ink">
+      <BioBackground />
 
-        <div className="relative z-10 flex w-full flex-col justify-between p-12 text-white">
-          <p className="text-sm font-medium tracking-[0.2em] text-white/70">
-            LIFE OS
-          </p>
+      <div className="relative z-10 mx-auto grid min-h-dvh max-w-6xl lg:grid-cols-2 lg:gap-8">
+        <section className="flex flex-col justify-center px-6 pb-4 pt-10 sm:px-10 lg:px-12 lg:py-12">
+          <BrandMark />
+        </section>
 
-          <div className="max-w-lg">
-            <p className="font-[family-name:var(--font-display)] text-6xl font-bold leading-none tracking-tight">
-              life
-              <span className="text-[var(--lm-mint)]">manager</span>
-            </p>
-            <p className="mt-6 max-w-md text-lg leading-relaxed text-white/80">
-              Maneja toda tu vida desde un solo lugar
-            </p>
-          </div>
-
-          <div className="grid max-w-lg grid-cols-2 gap-x-6 gap-y-4 text-sm text-white/75 sm:grid-cols-3">
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-xl font-bold text-white">
-                Nutrición
-              </p>
-            </div>
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-xl font-bold text-white">
-                Rutinas
-              </p>
-            </div>
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-xl font-bold text-white">
-                Rehabilitación
-              </p>
-            </div>
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-xl font-bold text-white">
-                Psicología
-              </p>
-            </div>
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-xl font-bold text-white">
-                Finanzas Personales
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Form panel — desktop + mobile welcome feel */}
-      <section className="flex flex-col bg-white px-6 py-10 sm:px-10 lg:px-16 lg:py-0">
-        <div className="mb-10 lg:hidden">
-          <p className="text-sm text-muted">Te damos la bienvenida a</p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-teal">
-            lifemanager
-          </p>
-          <div className="relative mt-6 overflow-hidden rounded-2xl">
-            <div
-              className="aspect-[4/3] w-full"
-              style={{
-                backgroundImage:
-                  "linear-gradient(120deg, rgba(11,31,28,0.55), rgba(31,138,122,0.35)), url('https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=80')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-            <div className="absolute bottom-4 left-4 rounded-xl bg-ink/75 px-3 py-3 text-white backdrop-blur-sm">
-              <div className="flex gap-4 text-center text-xs">
-                <MacroRing label="Prot" value="32" color="#f59e0b" />
-                <MacroRing label="Fat" value="20" color="#a78bfa" />
-                <MacroRing label="Carb" value="57" color="#2dd4bf" />
-              </div>
-            </div>
-          </div>
-          <p className="mt-4 text-base font-semibold leading-snug text-ink">
-            Haz que el progreso consciente sea un hábito para la vida.
-          </p>
-        </div>
-
-        <div className="flex flex-1 items-center">
+        <section className="flex flex-col justify-center px-6 pb-10 sm:px-10 lg:px-12 lg:py-12">
           <LoginForm errorMessage={errorMessage} />
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }
 
-function MacroRing({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color: string;
-}) {
+function BrandMark() {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="max-w-md">
       <div
-        className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold"
-        style={{
-          background: `conic-gradient(${color} 70%, rgba(255,255,255,0.2) 0)`,
-        }}
+        className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-teal/30 bg-teal/10"
+        aria-hidden
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ink/90">
-          {value}
-        </span>
+        <svg viewBox="0 0 40 40" className="h-8 w-8 text-mint" fill="currentColor">
+          <path d="M20 4c-2 6-8 10-8 16a8 8 0 1 0 16 0c0-6-6-10-8-16z" opacity="0.9" />
+          <circle cx="20" cy="22" r="3" className="text-teal" fill="currentColor" />
+        </svg>
       </div>
-      <span className="opacity-80">{label}</span>
+      <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,8vw,3.75rem)] font-bold leading-[0.95] tracking-tight">
+        naturaleza
+        <span className="block text-mint">CRUEL</span>
+      </h1>
+      <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted sm:text-base">
+        Sistema vivo. Datos, cuerpo y capital en un solo organismo.
+      </p>
     </div>
+  );
+}
+
+function BioBackground() {
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 20% 10%, rgba(42,157,138,0.18), transparent 50%), radial-gradient(ellipse 60% 50% at 85% 80%, rgba(94,234,212,0.08), transparent 45%), linear-gradient(180deg, #040807 0%, #080f0e 40%, #050a09 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 10 Q70 30 50 50 Q30 70 50 90 Q70 70 50 50 Q30 30 50 10' fill='none' stroke='%235eead4' stroke-width='0.5'/%3E%3C/svg%3E\")",
+          backgroundSize: "120px 120px",
+        }}
+      />
+    </>
   );
 }

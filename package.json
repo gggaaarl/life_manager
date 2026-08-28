@@ -13,10 +13,13 @@
     "db:link": "npx supabase link --project-ref edbgqpebcfpytyqwaaqd",
     "db:push": "npx supabase db push",
     "db:pull": "npx supabase db pull",
-    "db:types": "npx supabase gen types typescript --linked > apps/web/src/lib/supabase/database.types.ts",
+    "db:types": "node scripts/gen-db-types.mjs",
     "db:start": "npx supabase start",
     "db:stop": "npx supabase stop",
-    "db:reset": "npx supabase db reset"
+    "db:reset": "npx supabase db reset",
+    "dev:mobile": "npm run start --prefix apps/mobile",
+    "import:inspect": "node scripts/inspect-excel.mjs",
+    "import:sql": "node scripts/excel-to-sql.mjs"
   },
   "repository": {
     "type": "git",
@@ -31,6 +34,7 @@
   },
   "homepage": "https://github.com/gggaaarl/life_manager#readme",
   "devDependencies": {
-    "supabase": "^2.109.1"
+    "supabase": "^2.109.1",
+    "xlsx": "^0.18.5"
   }
 }

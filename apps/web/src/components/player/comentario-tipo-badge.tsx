@@ -1,4 +1,4 @@
-import { COMENTARIO_TIPO_LABELS, type ComentarioTipo } from "@/lib/player/constants";
+import { COMENTARIO_TIPO_LABELS, type ComentarioTipo } from "@life-manager/shared/player/constants";
 
 const BADGE_STYLES: Record<ComentarioTipo, string> = {
   dicho: "bg-teal/15 text-teal",
@@ -39,7 +39,7 @@ export function ComentarioTipoPicker({
                 ? tipo === "pensamiento"
                   ? "bg-forest text-white"
                   : "bg-teal text-white"
-                : "border border-line bg-white text-muted"
+                : "border border-line bg-panel text-muted"
             }`}
           >
             {COMENTARIO_TIPO_LABELS[tipo]}
@@ -50,7 +50,7 @@ export function ComentarioTipoPicker({
         <button
           type="button"
           onClick={onDelete}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted transition hover:bg-white hover:text-[var(--lm-danger)]"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted transition hover:bg-panel hover:text-[var(--lm-danger)]"
           aria-label="Eliminar comentario"
           title="Eliminar comentario"
         >

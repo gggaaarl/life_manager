@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
-import { SessionDebugLog } from "@/components/debug/console-log";
-import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
-import Link from "next/link";
+import { GameHub } from "@/components/game/game-hub";
+import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import type { MedalRow, UserJobRow } from "@life-manager/shared/game/constants";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -17,7 +17,7 @@ export default async function HomePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, email, avatar_url, role, experimental_profiles")
+    .select("display_name, email")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -30,52 +30,76 @@ export default async function HomePage() {
   const accessProfile = await getProfileAccess(supabase, user.id);
   const showPlayerMenu = canAccessPlayerMenu(accessProfile, user.id);
 
+  const [{ data: jobsRaw }, { data: medalsRaw }, { data: userMedals }] = await Promise.all([
+    supabase
+      .from("user_jobs")
+      .select("status, jobs(code, name, sort_order)")
+      .eq("user_id", user.id),
+    supabase.from("medals").select("code, name, description, sort_order").order("sort_order"),
+    supabase.from("user_medals").select("medal_id, medals(code)").eq("user_id", user.id),
+  ]);
+
+  const unlockedCodes = new Set<string>();
+  for (const row of userMedals ?? []) {
+    const medal = row.medals as { code: string } | { code: string }[] | null;
+    const code = Array.isArray(medal) ? medal[0]?.code : medal?.code;
+    if (code) {
+      unlockedCodes.add(code);
+    }
+  }
+
+  const jobs: UserJobRow[] = (jobsRaw ?? [])
+    .flatMap((row) => {
+      const job = row.jobs as { code: string; name: string; sort_order: number } | null;
+      if (!job) {
+        return [];
+      }
+      return [
+        {
+          code: job.code,
+          name: job.name,
+          status: row.status as UserJobRow["status"],
+          sort_order: job.sort_order,
+        },
+      ];
+    })
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(({ sort_order: _ignored, ...rest }) => rest);
+
+  const medals: MedalRow[] = (medalsRaw ?? []).map((medal) => ({
+    code: medal.code,
+    name: medal.name,
+    description: medal.description,
+    unlocked: unlockedCodes.has(medal.code),
+  }));
+
+  const driverJob = jobs.find((job) => job.code === "DRIVER");
+  const showDriverMenu =
+    driverJob?.status === "active" || driverJob?.status === "unlocked";
+
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader showPlayerMenu={showPlayerMenu} />
-      <SessionDebugLog
-        page="home"
-        userId={user.id}
-        email={profile?.email ?? user.email}
-        role={accessProfile.role}
-        experimentalProfiles={accessProfile.experimental_profiles}
+      <AppHeader
+        showPlayerMenu={showPlayerMenu}
+        showNutritionMenu
+        showFinanceMenu
+        showDriverMenu={showDriverMenu}
       />
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-ink">
             Hola, {name}
           </h1>
-          <p className="mt-2 text-muted">Hub de jobs — elige por dónde seguir.</p>
+          <p className="mt-2 text-muted">Tu hub.</p>
         </div>
 
-        <section className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-            <p className="text-sm text-muted">Job activo</p>
-            <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold">
-              PLAYER
-            </p>
-            <p className="mt-2 text-sm text-muted">
-              {showPlayerMenu
-                ? "Historial de salidas disponible."
-                : "Bloqueado para tu perfil por ahora."}
-            </p>
-            {showPlayerMenu ? (
-              <Link
-                href="/player/citas"
-                className="mt-4 inline-flex rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-              >
-                Abrir salidas
-              </Link>
-            ) : null}
-          </div>
-          <div className="rounded-2xl bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-            <p className="text-sm text-muted">Próximo</p>
-            <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold">
-              DRIVER
-            </p>
-            <p className="mt-2 text-sm text-muted">Job bloqueado — por desbloquear.</p>
-          </div>
-        </section>
+        <div className="mt-8">
+          <GameHub
+            jobs={jobs}
+            medals={medals}
+            unlockedMedalCodes={[...unlockedCodes]}
+          />
+        </div>
       </div>
     </main>
   );

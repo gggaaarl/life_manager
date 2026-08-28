@@ -18,7 +18,7 @@ import {
   TALLA_LABELS,
   TOP_LABELS,
   type ComentarioTipo,
-} from "@/lib/player/constants";
+} from "@life-manager/shared/player/constants";
 import { ComentarioTipoPicker } from "@/components/player/comentario-tipo-badge";
 
 type ComentarioDraft = {
@@ -74,7 +74,7 @@ export function CitaForm() {
   }
 
   return (
-    <div className="rounded-2xl bg-white shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+    <div className="rounded-2xl bg-panel border border-line/60">
       <div className="flex items-center justify-between border-b border-line px-6 py-4">
         <div>
           <p className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
@@ -289,7 +289,7 @@ export function CitaForm() {
                       ? "que tal cocomordan en misionero"
                       : "se ve que me va a lastimar"
                   }
-                  className="w-full rounded-xl border border-line bg-white px-3 py-2 outline-none focus:border-teal"
+                  className="w-full rounded-xl border border-line bg-panel px-3 py-2 outline-none focus:border-teal"
                 />
               </div>
             ))}

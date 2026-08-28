@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
+import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
 import {
   COMENTARIO_TIPOS,
   PLAYER_BELLEZAS,
@@ -19,8 +19,8 @@ import {
   type PlayerPresion,
   type PlayerTalla,
   type PlayerTop,
-} from "@/lib/player/constants";
-import { slugifyPersona } from "@/lib/player/format";
+} from "@life-manager/shared/player/constants";
+import { slugifyPersona } from "@life-manager/shared/player/format";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 

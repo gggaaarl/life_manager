@@ -15,8 +15,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Life Manager",
-  description: "Nutrición, entrenos, jobs y tu día a día en un solo lugar.",
+  title: "naturalezaCRUEL",
+  description: "Sistema vivo — cuerpo, capital y progreso.",
 };
 
 export default function RootLayout({

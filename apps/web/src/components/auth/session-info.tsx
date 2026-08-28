@@ -12,7 +12,7 @@ export function SessionInfo({ email, role, experimentalProfiles }: SessionInfoPr
   }
 
   return (
-    <div className="rounded-2xl border border-line bg-white p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+    <div className="rounded-2xl border border-line bg-panel p-4 border border-line/60">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
         Tu sesión
       </p>

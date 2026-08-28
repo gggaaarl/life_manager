@@ -1,15 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --lm-ink: #0b1f1c;
-  --lm-forest: #0f3d36;
-  --lm-teal: #1f8a7a;
-  --lm-mint: #7ddecb;
-  --lm-sand: #f3f0e8;
-  --lm-panel: #ffffff;
-  --lm-muted: #5c6b67;
-  --lm-line: #e4e8e6;
-  --lm-danger: #b42318;
+  --lm-void: #040807;
+  --lm-ink: #e8f4f1;
+  --lm-forest: #0d4a3f;
+  --lm-teal: #2a9d8a;
+  --lm-mint: #5eead4;
+  --lm-glow: #134e45;
+  --lm-sand: #080f0e;
+  --lm-panel: #0c1614;
+  --lm-panel-hover: #111f1c;
+  --lm-muted: #7a9490;
+  --lm-line: #1a2e2a;
+  --lm-danger: #f87171;
 }
 
 @theme inline {
@@ -18,9 +21,13 @@
   --color-ink: var(--lm-ink);
   --color-forest: var(--lm-forest);
   --color-teal: var(--lm-teal);
+  --color-mint: var(--lm-mint);
   --color-sand: var(--lm-sand);
+  --color-panel: var(--lm-panel);
+  --color-panel-hover: var(--lm-panel-hover);
   --color-muted: var(--lm-muted);
   --color-line: var(--lm-line);
+  --color-void: var(--lm-void);
 }
 
 * {
@@ -41,4 +48,10 @@ body {
 
 a {
   color: inherit;
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
 }

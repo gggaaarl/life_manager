@@ -1,5 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 const INAUGURAL_USER_ID = "f4689015-61af-4e89-81c3-00b00be1b1cb";
 
 type ProfileAccess = {
@@ -7,11 +5,23 @@ type ProfileAccess = {
   experimental_profiles: string[] | null;
 };
 
-export async function getProfileAccess(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<ProfileAccess> {
-  const { data } = await supabase
+type ProfilesRow = {
+  role?: string | null;
+  experimental_profiles?: string[] | null;
+};
+
+export async function getProfileAccess(supabase: unknown, userId: string): Promise<ProfileAccess> {
+  const client = supabase as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (column: string, value: string) => {
+          maybeSingle: () => Promise<{ data: ProfilesRow | null }>;
+        };
+      };
+    };
+  };
+
+  const { data } = await client
     .from("profiles")
     .select("role, experimental_profiles")
     .eq("id", userId)

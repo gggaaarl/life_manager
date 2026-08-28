@@ -8,6 +8,12 @@ dist/
 .next/
 apps/web/.next/
 apps/web/.env.local
+apps/mobile/.env
 supabase/.branches
 supabase/.temp
 .vercel
+
+# Archivos personales para importar, nunca se suben al repo
+import/*.xlsx
+import/*.xls
+import/*.csv

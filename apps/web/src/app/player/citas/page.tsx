@@ -2,8 +2,8 @@ import { CitaForm } from "@/components/player/cita-form";
 import { CitasTable, type CitaRow } from "@/components/player/citas-table";
 import { AppHeader } from "@/components/layout/app-header";
 import { CitasDebugLog } from "@/components/debug/console-log";
-import { canAccessPlayerMenu, getProfileAccess } from "@/lib/player/access";
-import type { PlayerPresion } from "@/lib/player/constants";
+import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
+import type { PlayerPresion } from "@life-manager/shared/player/constants";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -71,7 +71,7 @@ export default async function PlayerCitasPage() {
 
   return (
     <main className="min-h-dvh bg-sand">
-      <AppHeader showPlayerMenu />
+      <AppHeader showPlayerMenu showNutritionMenu showFinanceMenu />
       <CitasDebugLog userId={user.id} citasCount={citas.length} queryError={queryError} />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <Link
@@ -91,7 +91,7 @@ export default async function PlayerCitasPage() {
         </div>
 
         {queryError ? (
-          <div className="mb-6 rounded-2xl border border-[var(--lm-danger)]/30 bg-white p-4 text-sm text-[var(--lm-danger)]">
+          <div className="mb-6 rounded-2xl border border-[var(--lm-danger)]/30 bg-panel p-4 text-sm text-[var(--lm-danger)]">
             <p className="font-semibold">Error al leer salidas desde Supabase</p>
             <p className="mt-1 break-all font-mono text-xs">{queryError}</p>
           </div>

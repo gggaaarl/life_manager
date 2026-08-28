@@ -1,0 +1,19 @@
+{
+  "name": "@life-manager/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./player/constants": "./src/player/constants.ts",
+    "./player/format": "./src/player/format.ts",
+    "./player/access": "./src/player/access.ts",
+    "./database": "./src/database.types.ts",
+    "./finance/constants": "./src/finance/constants.ts",
+    "./finance/summaries": "./src/finance/summaries.ts",
+    "./finance/food": "./src/finance/food.ts",
+    "./game/constants": "./src/game/constants.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

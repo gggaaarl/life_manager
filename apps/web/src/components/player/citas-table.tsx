@@ -27,8 +27,8 @@ import {
   type PlayerPresion,
   type PlayerTalla,
   type PlayerTop,
-} from "@/lib/player/constants";
-import { formatComentario, formatFechaCorta, formatPersona } from "@/lib/player/format";
+} from "@life-manager/shared/player/constants";
+import { formatComentario, formatFechaCorta, formatPersona } from "@life-manager/shared/player/format";
 
 export type CitaRow = {
   id: string;
@@ -63,7 +63,7 @@ export function CitasTable({ citas }: { citas: CitaRow[] }) {
 
   if (citas.length === 0) {
     return (
-      <div className="rounded-2xl bg-white px-6 py-10 text-center shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+      <div className="rounded-2xl bg-panel px-6 py-10 text-center border border-line/60">
         <p className="font-[family-name:var(--font-display)] text-xl font-bold text-ink">
           Sin salidas todavía
         </p>
@@ -74,7 +74,7 @@ export function CitasTable({ citas }: { citas: CitaRow[] }) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl bg-white shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+      <div className="overflow-hidden rounded-2xl bg-panel border border-line/60">
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse text-left text-sm">
             <thead>
@@ -219,9 +219,9 @@ function EditCitaModal({ cita, onClose }: { cita: CitaRow; onClose: () => void }
       <div
         role="dialog"
         aria-modal="true"
-        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl"
+        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-panel shadow-xl"
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-line bg-white px-5 py-4">
+        <div className="sticky top-0 flex items-center justify-between border-b border-line bg-panel px-5 py-4">
           <div>
             <p className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
               Editar salida
@@ -432,7 +432,7 @@ function EditCitaModal({ cita, onClose }: { cita: CitaRow; onClose: () => void }
                   onChange={(event) =>
                     updateComentario(comentario.id, { contenido: event.target.value })
                   }
-                  className="w-full rounded-xl border border-line bg-white px-3 py-2 outline-none focus:border-teal"
+                  className="w-full rounded-xl border border-line bg-panel px-3 py-2 outline-none focus:border-teal"
                 />
               </div>
             ))}

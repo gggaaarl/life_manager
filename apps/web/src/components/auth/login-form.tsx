@@ -51,14 +51,11 @@ export function LoginForm({ errorMessage }: Props) {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-ink md:text-[2rem]">
+      <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-ink sm:text-3xl">
         Inicio de sesión
-      </h1>
-      <p className="mt-2 text-sm text-muted">
-        Entra a Life Manager y sigue tu progreso
-      </p>
+      </h2>
 
-      <form onSubmit={signInWithEmail} className="mt-8 flex flex-col gap-3">
+      <form onSubmit={signInWithEmail} className="mt-6 flex flex-col gap-3">
         <label className="sr-only" htmlFor="email">
           Dirección de email
         </label>
@@ -69,7 +66,7 @@ export function LoginForm({ errorMessage }: Props) {
           placeholder="Dirección de email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="h-12 w-full rounded-lg border border-transparent bg-[#eef1f0] px-4 text-[15px] outline-none transition focus:border-teal focus:bg-white"
+          className="h-12 w-full rounded-xl border border-line bg-panel px-4 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal/60 focus:ring-1 focus:ring-teal/30"
         />
 
         <label className="sr-only" htmlFor="password">
@@ -83,7 +80,7 @@ export function LoginForm({ errorMessage }: Props) {
             placeholder="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="h-12 w-full rounded-lg border border-transparent bg-[#eef1f0] px-4 pr-12 text-[15px] outline-none transition focus:border-teal focus:bg-white"
+            className="h-12 w-full rounded-xl border border-line bg-panel px-4 pr-12 text-[15px] text-ink outline-none transition placeholder:text-muted focus:border-teal/60 focus:ring-1 focus:ring-teal/30"
           />
           <button
             type="button"
@@ -95,12 +92,8 @@ export function LoginForm({ errorMessage }: Props) {
           </button>
         </div>
 
-        <div className="flex justify-end">
-          <span className="text-sm text-teal/80">¿Olvidaste la contraseña?</span>
-        </div>
-
         {error ? (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-[var(--lm-danger)]">
+          <p className="rounded-xl border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-[var(--lm-danger)]">
             {error}
           </p>
         ) : null}
@@ -108,7 +101,7 @@ export function LoginForm({ errorMessage }: Props) {
         <button
           type="submit"
           disabled={loading !== null}
-          className="mt-1 h-12 w-full rounded-lg bg-teal text-[15px] font-semibold text-white transition hover:bg-[#18786a] disabled:opacity-60"
+          className="mt-1 h-12 w-full rounded-xl bg-teal text-[15px] font-semibold text-void transition hover:bg-teal/90 disabled:opacity-60"
         >
           {loading === "email" ? "Entrando…" : "Inicia sesión"}
         </button>
@@ -124,16 +117,11 @@ export function LoginForm({ errorMessage }: Props) {
         type="button"
         onClick={signInWithGoogle}
         disabled={loading !== null}
-        className="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-line bg-white text-[15px] font-medium transition hover:bg-sand disabled:opacity-60"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-line bg-panel text-[15px] font-medium text-ink transition hover:border-teal/40 hover:bg-panel-hover disabled:opacity-60"
       >
         <GoogleIcon />
         {loading === "google" ? "Redirigiendo…" : "Continuar con Google"}
       </button>
-
-      <p className="mt-8 text-center text-sm text-muted">
-        ¿Todavía no eres usuario?{" "}
-        <span className="font-semibold text-teal">Regístrate con Google</span>
-      </p>
     </div>
   );
 }
