@@ -9,12 +9,11 @@ import { sortPaymentAccountsForDisplay } from "@/components/finance/sort-payment
 
 type Props = {
   workDate: string;
-  isToday: boolean;
   totalNet: number;
   accounts: PaymentAccountAllocation[];
 };
 
-export function WalletBalancesEditor({ workDate, isToday, totalNet, accounts }: Props) {
+export function WalletBalancesEditor({ workDate, totalNet, accounts }: Props) {
   const sorted = sortPaymentAccountsForDisplay(
     accounts.map((a) => ({
       id: a.id,
@@ -29,19 +28,12 @@ export function WalletBalancesEditor({ workDate, isToday, totalNet, accounts }: 
   const nonCashTotal = sorted
     .filter((a) => a.slug !== "efectivo")
     .reduce((s, a) => s + a.balance_soles, 0);
-  const cashAccount = sorted.find((a) => a.slug === "efectivo");
   const cashAmount = Math.max(0, Math.round((totalNet - nonCashTotal) * 100) / 100);
 
   return (
     <div className="rounded-xl border border-line bg-panel p-4 shadow-sm">
       <div className="mb-3 flex items-end justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-ink">Balance al cierre del día</p>
-          <p className="text-xs text-muted">
-            Total acumulado hasta {workDate}
-            {isToday ? " · asignación editable hoy" : " · asignación guardada para este día"}
-          </p>
-        </div>
+        <p className="text-sm font-semibold text-ink">Balance al cierre del día</p>
         <p className="font-[family-name:var(--font-display)] text-xl font-bold text-teal tabular-nums">
           {formatSoles(totalNet)}
         </p>

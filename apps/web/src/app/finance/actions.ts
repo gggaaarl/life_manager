@@ -12,8 +12,9 @@ import {
   FINANCE_MANUAL_EXPENSE_CATEGORIES,
 } from "@life-manager/shared/finance/constants";
 import { computeFoodLogValues } from "@life-manager/shared/finance/food";
-import { parseFormDateTime, occurredAtForWorkDate, todayInLima } from "@life-manager/shared/finance/summaries";
+import { occurredAtForWorkDate, parseFormDateTime, todayInLima } from "@life-manager/shared/finance/summaries";
 import { normalizeExpenseLabel } from "@life-manager/shared/finance/expense-items";
+import { ensureDayOpenedFromPrevious } from "@/lib/finance/open-day-balances";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -590,6 +591,8 @@ export async function updateAccountAllocation(formData: FormData) {
   if (account.slug === "efectivo") {
     throw new Error("Efectivo se calcula automáticamente.");
   }
+
+  await ensureDayOpenedFromPrevious(supabase, user.id, workDate);
 
   const { error } = await supabase.from("user_account_balance_snapshots").upsert(
     {

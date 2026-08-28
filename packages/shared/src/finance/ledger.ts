@@ -161,7 +161,7 @@ export type AccountBalanceSnapshot = {
   balance_soles: number;
 };
 
-/** Última asignación conocida por cuenta en o antes de `asOfDate`. */
+/** Última asignación en o antes de `asOfDate`. Nunca usa fechas posteriores. */
 export function resolveAccountSnapshotsAsOf(
   snapshots: AccountBalanceSnapshot[],
   asOfDate: string,

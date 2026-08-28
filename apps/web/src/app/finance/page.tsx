@@ -15,8 +15,9 @@ import {
   sumPersonalDayExpenses,
   type LedgerMovement,
 } from "@life-manager/shared/finance/ledger";
-import { dayRangeInLima, todayInLima } from "@life-manager/shared/finance/summaries";
+import { dayRangeInLima } from "@life-manager/shared/finance/summaries";
 import { createClient } from "@/lib/supabase/server";
+import { ensureDayOpenedFromPrevious } from "@/lib/finance/open-day-balances";
 import { redirect } from "next/navigation";
 
 const DEFAULT_FINANCE_DATE = "2026-08-22";
@@ -46,6 +47,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
   }
 
   const userJobs = await getUserNavJobs(supabase, user.id);
+  await ensureDayOpenedFromPrevious(supabase, user.id, workDate);
 
   const [
     { data: dayMovements },
@@ -109,8 +111,6 @@ export default async function FinancePage({ searchParams }: PageProps) {
     allocated_soles: snapshotByAccount.get(row.id) ?? 0,
   }));
 
-  const isToday = workDate === todayInLima();
-
   return (
     <main className="min-h-dvh bg-sand">
       <AppHeader userJobs={userJobs} />
@@ -120,7 +120,6 @@ export default async function FinancePage({ searchParams }: PageProps) {
         <div className="mt-4">
           <WalletBalancesEditor
             workDate={workDate}
-            isToday={isToday}
             totalNet={totalNet}
             accounts={accounts}
           />
