@@ -76,6 +76,25 @@ export function lastSetOfKind(sets: WorkoutSetView[]): WorkoutSetView | null {
   return ordered[ordered.length - 1] ?? null;
 }
 
+export function countSetsInEntry(entry: Pick<WorkoutEntryView, "sets">): number {
+  return new Set(entry.sets.map((set) => set.setNumber)).size;
+}
+
+export function sessionSetSummary(entries: WorkoutEntryView[]): {
+  total: number;
+  byMuscle: Array<{ muscleGroup: MuscleGroup; label: string; sets: number }>;
+} {
+  const byMuscle = groupByMuscle(entries).map((group) => ({
+    muscleGroup: group.muscleGroup,
+    label: group.label,
+    sets: group.items.reduce((sum, entry) => sum + countSetsInEntry(entry), 0),
+  }));
+  return {
+    total: byMuscle.reduce((sum, group) => sum + group.sets, 0),
+    byMuscle,
+  };
+}
+
 export function groupByMuscle<T extends { muscleGroup: MuscleGroup }>(
   items: T[],
 ): MuscleExerciseGroup<T>[] {

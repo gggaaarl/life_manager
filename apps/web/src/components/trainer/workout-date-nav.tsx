@@ -12,10 +12,21 @@ function formatDayLabel(dateYmd: string): string {
   }).format(new Date(year, month - 1, day));
 }
 
-export function WorkoutDateNav({ value }: { value: string }) {
+export function WorkoutDateNav({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange?: (next: string) => void;
+}) {
   const router = useRouter();
 
   function go(next: string) {
+    if (onChange) {
+      onChange(next);
+      window.history.replaceState(null, "", `/trainer?date=${next}`);
+      return;
+    }
     router.push(`/trainer?date=${next}`);
   }
 

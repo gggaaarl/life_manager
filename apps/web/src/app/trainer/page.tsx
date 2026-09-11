@@ -1,6 +1,5 @@
 import { AppHeader } from "@/components/layout/app-header";
-import { WorkoutDateNav } from "@/components/trainer/workout-date-nav";
-import { WorkoutDayLog } from "@/components/trainer/workout-day-log";
+import { WorkoutTrainer } from "@/components/trainer/workout-trainer";
 import { todayInLima } from "@life-manager/shared/workout/constants";
 import { listCatalogExercises, loadWorkoutDay } from "@life-manager/shared/workout/api";
 import { createClient } from "@/lib/supabase/server";
@@ -31,10 +30,12 @@ export default async function TrainerPage({ searchParams }: PageProps) {
     <main className="min-h-dvh bg-white">
       <AppHeader />
       <div className="mx-auto max-w-lg px-4 pb-8 pt-4 sm:px-6">
-        <WorkoutDateNav value={workDate} />
-        <div className="mt-6">
-          <WorkoutDayLog date={workDate} catalog={catalog} entries={entries} />
-        </div>
+        <WorkoutTrainer
+          userId={user.id}
+          initialDate={workDate}
+          initialCatalog={catalog}
+          initialEntries={entries}
+        />
       </div>
     </main>
   );

@@ -13,6 +13,7 @@ type QueryResult<T = unknown> = Promise<{ data: T; error: { message: string } | 
 type FilterBuilder = QueryResult & {
   eq: (column: string, value: string | number | boolean) => FilterBuilder;
   order: (column: string, options?: { ascending?: boolean }) => FilterBuilder;
+  limit: (count: number) => FilterBuilder;
   maybeSingle: () => QueryResult<Record<string, unknown> | null>;
   single: () => QueryResult<Record<string, unknown> | null>;
 };
@@ -132,13 +133,11 @@ async function ensureProfile(supabase: unknown, userId: string): Promise<void> {
   if (created.error) fail(created.error, "No se pudo crear el perfil.");
 }
 
-async function ensureSession(
+async function findSessionId(
   supabase: unknown,
   userId: string,
   sessionDate: string,
-): Promise<string> {
-  await ensureProfile(supabase, userId);
-
+): Promise<string | null> {
   const existing = await db(supabase)
     .from("workout_sessions")
     .select("id")
@@ -147,18 +146,46 @@ async function ensureSession(
     .maybeSingle();
 
   if (existing.error) fail(existing.error, "No se pudo abrir la sesión.");
-  if (existing.data?.id) return String(existing.data.id);
+  return existing.data?.id ? String(existing.data.id) : null;
+}
 
+async function insertSession(
+  supabase: unknown,
+  userId: string,
+  sessionDate: string,
+): Promise<{ id: string | null; error: { message: string } | null }> {
   const created = await db(supabase)
     .from("workout_sessions")
     .insert({ user_id: userId, session_date: sessionDate })
     .select("id")
     .single();
+  return {
+    id: created.data?.id ? String(created.data.id) : null,
+    error: created.error,
+  };
+}
 
-  if (created.error || !created.data?.id) {
-    fail(created.error, "No se pudo crear la sesión.");
+async function ensureSession(
+  supabase: unknown,
+  userId: string,
+  sessionDate: string,
+): Promise<string> {
+  const existingId = await findSessionId(supabase, userId, sessionDate);
+  if (existingId) return existingId;
+
+  const created = await insertSession(supabase, userId, sessionDate);
+  if (created.id) return created.id;
+
+  const message = created.error?.message ?? "";
+  if (/foreign key|profiles/i.test(message)) {
+    await ensureProfile(supabase, userId);
+    const retried = await insertSession(supabase, userId, sessionDate);
+    if (retried.id) return retried.id;
   }
-  return String(created.data.id);
+
+  const raced = await findSessionId(supabase, userId, sessionDate);
+  if (raced) return raced;
+  fail(created.error, "No se pudo crear la sesión.");
 }
 
 async function loadEntrySets(supabase: unknown, entryId: string): Promise<WorkoutSetView[]> {
@@ -179,24 +206,33 @@ export async function addExerciseToDay(
   exerciseId: string,
 ): Promise<void> {
   const sessionId = await ensureSession(supabase, userId, sessionDate);
-  const entries = await loadWorkoutDay(supabase, userId, sessionDate);
-  if (entries.some((entry) => entry.exerciseId === exerciseId)) {
-    return;
-  }
 
+  const last = await db(supabase)
+    .from("workout_entries")
+    .select("sort_order")
+    .eq("session_id", sessionId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (last.error) fail(last.error, "No se pudo leer el día.");
+
+  const sortOrder = last.data?.sort_order == null ? 0 : Number(last.data.sort_order) + 1;
   const created = await db(supabase)
     .from("workout_entries")
     .insert({
       session_id: sessionId,
       exercise_id: exerciseId,
-      sort_order: entries.length,
+      sort_order: sortOrder,
     })
     .select("id")
     .single();
 
-  if (created.error || !created.data?.id) {
+  if (created.error) {
+    if (/duplicate|unique/i.test(created.error.message)) return;
     fail(created.error, "No se pudo agregar el ejercicio.");
   }
+  if (!created.data?.id) fail(created.error, "No se pudo agregar el ejercicio.");
 
   const firstSet = await db(supabase).from("workout_sets").insert({
     entry_id: String(created.data.id),

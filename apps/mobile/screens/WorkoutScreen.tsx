@@ -32,9 +32,11 @@ import {
   type MuscleGroup,
 } from "@life-manager/shared/workout/constants";
 import {
+  countSetsInEntry,
   formatSetLabel,
   groupByMuscle,
   numberToInput,
+  sessionSetSummary,
   parseOptionalInt,
   parseOptionalNumber,
   parseOptionalRir,
@@ -78,20 +80,21 @@ export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const reload = useCallback(async () => {
-    const [nextCatalog, nextEntries] = await Promise.all([
-      listCatalogExercises(supabase),
-      loadWorkoutDay(supabase, userId, date),
-    ]);
-    setCatalog(nextCatalog);
+  const reloadDay = useCallback(async () => {
+    const nextEntries = await loadWorkoutDay(supabase, userId, date);
     setEntries(nextEntries);
   }, [date, userId]);
+
+  const reloadCatalog = useCallback(async () => {
+    const nextCatalog = await listCatalogExercises(supabase);
+    setCatalog(nextCatalog);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    reload()
+    reloadDay()
       .catch((err) => {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "No se pudo cargar el día.");
@@ -103,19 +106,37 @@ export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [reload]);
+  }, [reloadDay]);
 
-  async function run(action: () => Promise<void>) {
+  useEffect(() => {
+    let cancelled = false;
+    reloadCatalog().catch((err) => {
+      if (!cancelled) {
+        setError(err instanceof Error ? err.message : "No se pudo cargar el catálogo.");
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadCatalog]);
+
+  async function run(action: () => Promise<void>, options?: { refreshCatalog?: boolean; refreshDay?: boolean }) {
     setError(null);
     try {
       await action();
-      await reload();
+      if (options?.refreshDay !== false) {
+        await reloadDay();
+      }
+      if (options?.refreshCatalog) {
+        await reloadCatalog();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar.");
     }
   }
 
   const groups = groupByMuscle(entries);
+  const setSummary = sessionSetSummary(entries);
 
   return (
     <View style={styles.screen}>
@@ -141,19 +162,41 @@ export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
           </View>
         ) : null}
 
-        {groups.map((group) => (
-          <View key={group.muscleGroup} style={styles.group}>
-            <Text style={styles.groupTitle}>{group.label}</Text>
-            {group.items.map((entry, index) => (
-              <ExerciseCard
-                key={entry.id}
-                number={index + 1}
-                entry={entry}
-                onRun={run}
-              />
-            ))}
+        {!loading && entries.length > 0 ? (
+          <View>
+            <Text style={styles.summaryTotal}>
+              {setSummary.total} {setSummary.total === 1 ? "set" : "sets"}
+            </Text>
+            <Text style={styles.muted}>
+              {setSummary.byMuscle.map((group) => `${group.label} ${group.sets}`).join(" · ")}
+            </Text>
           </View>
-        ))}
+        ) : null}
+
+        {(() => {
+          let exerciseNumber = 0;
+          return groups.map((group) => {
+            const groupSets = group.items.reduce((sum, entry) => sum + countSetsInEntry(entry), 0);
+            return (
+              <View key={group.muscleGroup} style={styles.group}>
+                <Text style={styles.groupTitle}>
+                  {group.label} · {groupSets} {groupSets === 1 ? "set" : "sets"}
+                </Text>
+                {group.items.map((entry) => {
+                  exerciseNumber += 1;
+                  return (
+                    <ExerciseCard
+                      key={entry.id}
+                      number={exerciseNumber}
+                      entry={entry}
+                      onRun={run}
+                    />
+                  );
+                })}
+              </View>
+            );
+          });
+        })()}
 
         <Pressable style={styles.primary} onPress={() => setPickerOpen(true)}>
           <Text style={styles.primaryText}>Agregar ejercicio</Text>
@@ -178,15 +221,23 @@ export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
           })
         }
         onCreate={(name, muscleGroup) =>
-          run(async () => {
-            await createAndAddExercise(supabase, userId, date, name, muscleGroup);
-            setPickerOpen(false);
-          })
+          run(
+            async () => {
+              await createAndAddExercise(supabase, userId, date, name, muscleGroup);
+              setPickerOpen(false);
+            },
+            { refreshCatalog: true },
+          )
         }
       />
     </View>
   );
 }
+
+type RunFn = (
+  action: () => Promise<void>,
+  options?: { refreshCatalog?: boolean; refreshDay?: boolean },
+) => Promise<void>;
 
 function ExerciseCard({
   number,
@@ -195,7 +246,7 @@ function ExerciseCard({
 }: {
   number: number;
   entry: WorkoutEntryView;
-  onRun: (action: () => Promise<void>) => Promise<void>;
+  onRun: RunFn;
 }) {
   return (
     <View style={styles.card}>
@@ -242,7 +293,7 @@ function SetEditor({
   entryId: string;
   sets: WorkoutEntryView["sets"];
   set: WorkoutEntryView["sets"][number];
-  onRun: (action: () => Promise<void>) => Promise<void>;
+  onRun: RunFn;
 }) {
   const [weight, setWeight] = useState(numberToInput(set.weightKg));
   const [reps, setReps] = useState(numberToInput(set.reps));
@@ -261,12 +312,14 @@ function SetEditor({
       Math.max(...sets.filter((row) => row.setNumber === set.setNumber).map((row) => row.subsetNumber));
 
   function save() {
-    void onRun(() =>
-      updateSetFields(supabase, set.id, {
-        weightKg: parseOptionalNumber(weight),
-        reps: parseOptionalInt(reps),
-        rir: parseOptionalRir(rir),
-      }),
+    void onRun(
+      () =>
+        updateSetFields(supabase, set.id, {
+          weightKg: parseOptionalNumber(weight),
+          reps: parseOptionalInt(reps),
+          rir: parseOptionalRir(rir),
+        }),
+      { refreshDay: false },
     );
   }
 
@@ -413,6 +466,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.panel },
   content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 18 },
   title: { fontSize: 17, fontWeight: "600", color: COLORS.ink, letterSpacing: -0.3 },
+  summaryTotal: { fontSize: 15, fontWeight: "600", color: COLORS.ink, marginBottom: 4 },
   email: { color: COLORS.muted, fontSize: 13, textAlign: "center" },
   dateRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   dateCenter: { alignItems: "center" },

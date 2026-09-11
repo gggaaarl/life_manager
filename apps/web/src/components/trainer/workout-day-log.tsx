@@ -1,36 +1,46 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
-  addExerciseAction,
-  addSetAction,
-  addSubsetAction,
-  changeSetKindAction,
-  createExerciseAction,
-  deleteEntryAction,
-  deleteSetAction,
-  updateSetAction,
-} from "@/app/trainer/actions";
+  addExerciseToDay,
+  addSet,
+  addSubset,
+  changeSetKind,
+  createAndAddExercise,
+  deleteEntry,
+  deleteSetRow,
+  updateSetFields,
+} from "@life-manager/shared/workout/api";
 import {
   MUSCLE_GROUPS,
   MUSCLE_GROUP_LABELS,
   SET_KINDS,
   SET_KIND_LABELS,
+  isSetKind,
   isSpecialSetKind,
   type MuscleGroup,
 } from "@life-manager/shared/workout/constants";
 import {
+  countSetsInEntry,
   formatSetLabel,
   groupByMuscle,
   numberToInput,
+  sessionSetSummary,
+  parseOptionalInt,
+  parseOptionalNumber,
+  parseOptionalRir,
   type CatalogExercise,
   type WorkoutEntryView,
 } from "@life-manager/shared/workout/logic";
 
 type Props = {
   date: string;
+  userId: string;
   catalog: CatalogExercise[];
   entries: WorkoutEntryView[];
+  onRefreshDay: () => Promise<unknown>;
+  onRefreshCatalog: () => Promise<unknown>;
 };
 
 const cellInput =
@@ -39,9 +49,17 @@ const cellInput =
 const tableGrid =
   "grid grid-cols-[2.25rem_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)_minmax(2.75rem,0.85fr)_minmax(5.75rem,7rem)_1.5rem] items-center gap-x-1";
 
-export function WorkoutDayLog({ date, catalog, entries }: Props) {
+export function WorkoutDayLog({
+  date,
+  userId,
+  catalog,
+  entries,
+  onRefreshDay,
+  onRefreshCatalog,
+}: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const muscleGroups = groupByMuscle(entries);
+  const setSummary = sessionSetSummary(entries);
   let exerciseNumber = 0;
 
   return (
@@ -52,24 +70,39 @@ export function WorkoutDayLog({ date, catalog, entries }: Props) {
         </p>
       ) : (
         <div className="space-y-8">
-          {muscleGroups.map((group) => (
+          <div>
+            <p className="text-[15px] font-semibold text-ink">
+              {setSummary.total} {setSummary.total === 1 ? "set" : "sets"}
+            </p>
+            <p className="mt-1 text-[13px] text-muted">
+              {setSummary.byMuscle
+                .map((group) => `${group.label} ${group.sets}`)
+                .join(" · ")}
+            </p>
+          </div>
+          {muscleGroups.map((group) => {
+            const groupSets = group.items.reduce((sum, entry) => sum + countSetsInEntry(entry), 0);
+            return (
             <section key={group.muscleGroup}>
-              <p className="mb-3 text-[13px] font-medium text-muted">{group.label}</p>
+              <p className="mb-3 text-[13px] font-medium text-muted">
+                {group.label} · {groupSets} {groupSets === 1 ? "set" : "sets"}
+              </p>
               <div className="space-y-7">
                 {group.items.map((entry) => {
                   exerciseNumber += 1;
                   return (
                     <ExerciseBlock
                       key={entry.id}
-                      date={date}
                       entry={entry}
                       number={exerciseNumber}
+                      onRefreshDay={onRefreshDay}
                     />
                   );
                 })}
               </div>
             </section>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -86,9 +119,12 @@ export function WorkoutDayLog({ date, catalog, entries }: Props) {
       {pickerOpen ? (
         <AddExercisePicker
           date={date}
+          userId={userId}
           catalog={catalog}
           usedIds={new Set(entries.map((entry) => entry.exerciseId))}
           onClose={() => setPickerOpen(false)}
+          onRefreshDay={onRefreshDay}
+          onRefreshCatalog={onRefreshCatalog}
         />
       ) : null}
     </div>
@@ -96,15 +132,16 @@ export function WorkoutDayLog({ date, catalog, entries }: Props) {
 }
 
 function ExerciseBlock({
-  date,
   entry,
   number,
+  onRefreshDay,
 }: {
-  date: string;
   entry: WorkoutEntryView;
   number: number;
+  onRefreshDay: () => Promise<unknown>;
 }) {
   const [, startTransition] = useTransition();
+  const supabase = useMemo(() => createClient(), []);
 
   return (
     <article>
@@ -113,19 +150,18 @@ function ExerciseBlock({
           <span className="mr-2 font-medium text-muted">{number}</span>
           {entry.exerciseName}
         </h3>
-        <form
-          action={(formData) => {
-            startTransition(() => {
-              void deleteEntryAction(formData);
+        <button
+          type="button"
+          className="text-[13px] text-muted hover:text-ink"
+          onClick={() => {
+            startTransition(async () => {
+              await deleteEntry(supabase, entry.id);
+              await onRefreshDay();
             });
           }}
         >
-          <input type="hidden" name="date" value={date} />
-          <input type="hidden" name="entryId" value={entry.id} />
-          <button type="submit" className="text-[13px] text-muted hover:text-ink">
-            Quitar
-          </button>
-        </form>
+          Quitar
+        </button>
       </div>
 
       <div className={`${tableGrid} border-b border-line pb-1.5 text-[11px] font-medium text-muted`}>
@@ -138,39 +174,38 @@ function ExerciseBlock({
       </div>
 
       {entry.sets.map((set) => (
-        <SetRow key={set.id} date={date} entryId={entry.id} sets={entry.sets} set={set} />
+        <SetRow key={set.id} entryId={entry.id} sets={entry.sets} set={set} onRefreshDay={onRefreshDay} />
       ))}
 
-      <form
-        className="mt-1"
-        action={(formData) => {
-          startTransition(() => {
-            void addSetAction(formData);
+      <button
+        type="button"
+        className="mt-1 w-full py-2.5 text-center text-[14px] font-medium text-teal"
+        onClick={() => {
+          startTransition(async () => {
+            await addSet(supabase, entry.id);
+            await onRefreshDay();
           });
         }}
       >
-        <input type="hidden" name="date" value={date} />
-        <input type="hidden" name="entryId" value={entry.id} />
-        <button type="submit" className="w-full py-2.5 text-center text-[14px] font-medium text-teal">
-          + Agregar set
-        </button>
-      </form>
+        + Agregar set
+      </button>
     </article>
   );
 }
 
 function SetRow({
-  date,
   entryId,
   sets,
   set,
+  onRefreshDay,
 }: {
-  date: string;
   entryId: string;
   sets: WorkoutEntryView["sets"];
   set: WorkoutEntryView["sets"][number];
+  onRefreshDay: () => Promise<unknown>;
 }) {
   const [, startTransition] = useTransition();
+  const supabase = useMemo(() => createClient(), []);
   const special = isSpecialSetKind(set.setKind);
   const isLastSubset =
     special &&
@@ -178,8 +213,13 @@ function SetRow({
       Math.max(...sets.filter((row) => row.setNumber === set.setNumber).map((row) => row.subsetNumber));
 
   function saveFields(form: HTMLFormElement) {
-    startTransition(() => {
-      void updateSetAction(new FormData(form));
+    const data = new FormData(form);
+    startTransition(async () => {
+      await updateSetFields(supabase, set.id, {
+        weightKg: parseOptionalNumber(String(data.get("weightKg") ?? "")),
+        reps: parseOptionalInt(String(data.get("reps") ?? "")),
+        rir: parseOptionalRir(String(data.get("rir") ?? "")),
+      });
     });
   }
 
@@ -193,8 +233,6 @@ function SetRow({
           saveFields(event.currentTarget);
         }}
       >
-        <input type="hidden" name="date" value={date} />
-        <input type="hidden" name="setId" value={set.id} />
         <span className="pl-1 text-[15px] font-medium tabular-nums text-ink">
           {formatSetLabel(sets, set)}
         </span>
@@ -228,14 +266,11 @@ function SetRow({
           aria-label="Tipo de set"
           className="h-9 w-full rounded-md border-0 bg-transparent px-1 text-center text-[13px] text-ink outline-none focus:bg-sand"
           onChange={(event) => {
-            const form = event.currentTarget.form;
-            if (!form) return;
-            const data = new FormData(form);
-            data.set("entryId", entryId);
-            data.set("setNumber", String(set.setNumber));
-            data.set("setKind", event.target.value);
-            startTransition(() => {
-              void changeSetKindAction(data);
+            const nextKind = event.target.value;
+            if (!isSetKind(nextKind)) return;
+            startTransition(async () => {
+              await changeSetKind(supabase, entryId, set.setNumber, nextKind);
+              await onRefreshDay();
             });
           }}
         >
@@ -250,11 +285,9 @@ function SetRow({
           aria-label="Borrar set"
           className="text-[13px] text-muted hover:text-ink"
           onClick={() => {
-            const data = new FormData();
-            data.set("date", date);
-            data.set("setId", set.id);
-            startTransition(() => {
-              void deleteSetAction(data);
+            startTransition(async () => {
+              await deleteSetRow(supabase, set.id);
+              await onRefreshDay();
             });
           }}
         >
@@ -263,20 +296,18 @@ function SetRow({
       </form>
 
       {isLastSubset ? (
-        <form
-          action={(formData) => {
-            startTransition(() => {
-              void addSubsetAction(formData);
+        <button
+          type="button"
+          className="w-full py-2 text-center text-[13px] font-medium text-teal"
+          onClick={() => {
+            startTransition(async () => {
+              await addSubset(supabase, entryId, set.setNumber);
+              await onRefreshDay();
             });
           }}
         >
-          <input type="hidden" name="date" value={date} />
-          <input type="hidden" name="entryId" value={entryId} />
-          <input type="hidden" name="setNumber" value={set.setNumber} />
-          <button type="submit" className="w-full py-2 text-center text-[13px] font-medium text-teal">
-            + Sub set {set.setNumber}.{set.subsetNumber + 1}
-          </button>
-        </form>
+          + Sub set {set.setNumber}.{set.subsetNumber + 1}
+        </button>
       ) : null}
     </div>
   );
@@ -284,19 +315,26 @@ function SetRow({
 
 function AddExercisePicker({
   date,
+  userId,
   catalog,
   usedIds,
   onClose,
+  onRefreshDay,
+  onRefreshCatalog,
 }: {
   date: string;
+  userId: string;
   catalog: CatalogExercise[];
   usedIds: Set<string>;
   onClose: () => void;
+  onRefreshDay: () => Promise<unknown>;
+  onRefreshCatalog: () => Promise<unknown>;
 }) {
   const [query, setQuery] = useState("");
   const [name, setName] = useState("");
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>("pecho");
   const [, startTransition] = useTransition();
+  const supabase = useMemo(() => createClient(), []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -331,24 +369,20 @@ function AddExercisePicker({
             <div key={group.muscleGroup} className="mb-5">
               <p className="mb-1 text-[13px] font-medium text-muted">{group.label}</p>
               {group.items.map((exercise) => (
-                <form
+                <button
                   key={exercise.id}
-                  action={(formData) => {
+                  type="button"
+                  className="w-full border-b border-line py-3 text-left text-[15px] text-ink"
+                  onClick={() => {
                     startTransition(async () => {
-                      await addExerciseAction(formData);
+                      await addExerciseToDay(supabase, userId, date, exercise.id);
+                      await onRefreshDay();
                       onClose();
                     });
                   }}
                 >
-                  <input type="hidden" name="date" value={date} />
-                  <input type="hidden" name="exerciseId" value={exercise.id} />
-                  <button
-                    type="submit"
-                    className="w-full border-b border-line py-3 text-left text-[15px] text-ink"
-                  >
-                    {exercise.name}
-                  </button>
-                </form>
+                  {exercise.name}
+                </button>
               ))}
             </div>
           ))}
@@ -356,15 +390,16 @@ function AddExercisePicker({
 
         <form
           className="space-y-2 border-t border-line px-5 py-4"
-          action={(formData) => {
+          onSubmit={(event) => {
+            event.preventDefault();
             startTransition(async () => {
-              await createExerciseAction(formData);
+              await createAndAddExercise(supabase, userId, date, name, muscleGroup);
+              await Promise.all([onRefreshDay(), onRefreshCatalog()]);
               onClose();
             });
           }}
         >
           <p className="text-[13px] font-medium text-muted">Nuevo ejercicio</p>
-          <input type="hidden" name="date" value={date} />
           <input
             name="name"
             value={name}
