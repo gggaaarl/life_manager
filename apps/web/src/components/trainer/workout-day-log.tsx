@@ -72,7 +72,7 @@ export function WorkoutDayLog({
         <div className="space-y-8">
           <div>
             <p className="text-[15px] font-semibold text-ink">
-              {setSummary.total} {setSummary.total === 1 ? "set" : "sets"}
+              Volumen sistemático del día: {setSummary.total}
             </p>
             <p className="mt-1 text-[13px] text-muted">
               {setSummary.byMuscle

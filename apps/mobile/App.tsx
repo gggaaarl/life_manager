@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import type { Session } from "@supabase/supabase-js";
+import { accountFromUser } from "@life-manager/shared/auth/account";
 import { signOut } from "./lib/auth";
 import { supabase } from "./lib/supabase";
 import { LoginScreen } from "./screens/LoginScreen";
@@ -80,7 +81,7 @@ function AppReady() {
     <SafeAreaView style={styles.screen}>
       <WorkoutScreen
         userId={session.user.id}
-        email={session.user.email}
+        account={accountFromUser(session.user)}
         onSignOut={handleSignOut}
         signingOut={busy}
       />

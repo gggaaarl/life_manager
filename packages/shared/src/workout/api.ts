@@ -2,6 +2,7 @@ import { isSpecialSetKind, type MuscleGroup, type SetKind } from "./constants";
 import {
   nextSetNumber,
   nextSubsetNumber,
+  setNumbersAfterDeletingSet,
   sortSets,
   type CatalogExercise,
   type WorkoutEntryView,
@@ -385,18 +386,13 @@ export async function deleteSetRow(supabase: unknown, setId: string): Promise<vo
   const removed = await db(supabase).from("workout_sets").delete().eq("id", setId);
   if (removed.error) fail(removed.error, "No se pudo borrar el set.");
 
-  if (siblings.length <= 1) {
-    const remaining = sets.filter((set) => set.id !== setId);
-    for (const [index, set] of remaining.entries()) {
-      const nextNumber = index + 1;
-      if (set.setNumber !== nextNumber) {
-        const renumbered = await db(supabase)
-          .from("workout_sets")
-          .update({ set_number: nextNumber })
-          .eq("id", set.id);
-        if (renumbered.error) fail(renumbered.error, "No se pudo reordenar.");
-      }
-    }
+  const shifts = setNumbersAfterDeletingSet(sets, setId, setNumber, siblings.length);
+  for (const shift of shifts) {
+    const renumbered = await db(supabase)
+      .from("workout_sets")
+      .update({ set_number: shift.setNumber })
+      .eq("id", shift.id);
+    if (renumbered.error) fail(renumbered.error, "No se pudo reordenar.");
   }
 }
 

@@ -43,6 +43,8 @@ import {
   type CatalogExercise,
   type WorkoutEntryView,
 } from "@life-manager/shared/workout/logic";
+import type { AccountProfile } from "@life-manager/shared/auth/account";
+import { AppSidebar } from "../components/AppSidebar";
 import { supabase } from "../lib/supabase";
 
 const COLORS = {
@@ -67,18 +69,19 @@ function formatDayLabel(dateYmd: string): string {
 
 type Props = {
   userId: string;
-  email?: string | null;
+  account: AccountProfile;
   onSignOut: () => void;
   signingOut: boolean;
 };
 
-export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
+export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props) {
   const [date, setDate] = useState(todayInLima);
   const [catalog, setCatalog] = useState<CatalogExercise[]>([]);
   const [entries, setEntries] = useState<WorkoutEntryView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const reloadDay = useCallback(async () => {
     const nextEntries = await loadWorkoutDay(supabase, userId, date);
@@ -140,6 +143,28 @@ export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
 
   return (
     <View style={styles.screen}>
+      <View style={styles.topBar}>
+        <Pressable
+          style={styles.hamburger}
+          onPress={() => setMenuOpen(true)}
+          accessibilityLabel="Abrir menú"
+        >
+          <View style={styles.hamburgerBar} />
+          <View style={styles.hamburgerBar} />
+          <View style={styles.hamburgerBar} />
+        </Pressable>
+        <Text style={styles.brand}>
+          NATURALEZA<Text style={styles.brandAccent}>CRUEL</Text>
+        </Text>
+        <View style={styles.hamburger} />
+      </View>
+      <AppSidebar
+        visible={menuOpen}
+        account={account}
+        signingOut={signingOut}
+        onClose={() => setMenuOpen(false)}
+        onSignOut={onSignOut}
+      />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.dateRow}>
           <Pressable style={styles.dateBtn} onPress={() => setDate((value) => shiftDate(value, -1))}>
@@ -165,7 +190,7 @@ export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
         {!loading && entries.length > 0 ? (
           <View>
             <Text style={styles.summaryTotal}>
-              {setSummary.total} {setSummary.total === 1 ? "set" : "sets"}
+              Volumen sistemático del día: {setSummary.total}
             </Text>
             <Text style={styles.muted}>
               {setSummary.byMuscle.map((group) => `${group.label} ${group.sets}`).join(" · ")}
@@ -200,10 +225,6 @@ export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
 
         <Pressable style={styles.primary} onPress={() => setPickerOpen(true)}>
           <Text style={styles.primaryText}>Agregar ejercicio</Text>
-        </Pressable>
-
-        <Pressable style={styles.outline} onPress={onSignOut} disabled={signingOut}>
-          <Text style={styles.outlineText}>{signingOut ? "Saliendo…" : "Cerrar sesión"}</Text>
         </Pressable>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -464,6 +485,19 @@ function AddExerciseModal({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.panel },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+  },
+  hamburger: { width: 36, height: 36, justifyContent: "center", gap: 5 },
+  hamburgerBar: { height: 2, width: 20, backgroundColor: COLORS.ink, borderRadius: 1 },
+  brand: { fontSize: 13, fontWeight: "600", color: COLORS.ink, letterSpacing: -0.2 },
+  brandAccent: { color: COLORS.sageDark },
   content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 18 },
   title: { fontSize: 17, fontWeight: "600", color: COLORS.ink, letterSpacing: -0.3 },
   summaryTotal: { fontSize: 15, fontWeight: "600", color: COLORS.ink, marginBottom: 4 },

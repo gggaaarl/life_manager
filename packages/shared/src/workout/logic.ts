@@ -63,6 +63,20 @@ export function nextSetNumber(sets: WorkoutSetView[]): number {
   return sets.reduce((max, set) => Math.max(max, set.setNumber), 0) + 1;
 }
 
+/** Al borrar un set entero, los que siguen bajan 1. Los subsets del mismo número no se tocan. */
+export function setNumbersAfterDeletingSet(
+  sets: WorkoutSetView[],
+  deletedId: string,
+  deletedSetNumber: number,
+  siblingCount: number,
+): Array<{ id: string; setNumber: number }> {
+  if (siblingCount > 1) return [];
+  return sets
+    .filter((set) => set.id !== deletedId && set.setNumber > deletedSetNumber)
+    .sort((a, b) => a.setNumber - b.setNumber || a.subsetNumber - b.subsetNumber)
+    .map((set) => ({ id: set.id, setNumber: set.setNumber - 1 }));
+}
+
 export function nextSubsetNumber(sets: WorkoutSetView[], setNumber: number): number {
   return (
     sets
@@ -76,8 +90,18 @@ export function lastSetOfKind(sets: WorkoutSetView[]): WorkoutSetView | null {
   return ordered[ordered.length - 1] ?? null;
 }
 
+function hasLoggedWork(set: WorkoutSetView): boolean {
+  return set.weightKg != null && set.reps != null && set.rir != null;
+}
+
+/** Set numerado con peso, reps y RIR. 4.1 y 4.2 cuentan como uno. Vacío no cuenta. */
 export function countSetsInEntry(entry: Pick<WorkoutEntryView, "sets">): number {
-  return new Set(entry.sets.map((set) => set.setNumber)).size;
+  const counted = new Set<number>();
+  for (const set of entry.sets) {
+    if (!Number.isFinite(set.setNumber) || !hasLoggedWork(set)) continue;
+    counted.add(set.setNumber);
+  }
+  return counted.size;
 }
 
 export function sessionSetSummary(entries: WorkoutEntryView[]): {

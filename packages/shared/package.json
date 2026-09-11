@@ -15,6 +15,7 @@
     "./finance/expense-items": "./src/finance/expense-items.ts",
     "./game/constants": "./src/game/constants.ts",
     "./game/job-nav": "./src/game/job-nav.ts",
+    "./auth/account": "./src/auth/account.ts",
     "./workout/constants": "./src/workout/constants.ts",
     "./workout/logic": "./src/workout/logic.ts",
     "./workout/api": "./src/workout/api.ts"

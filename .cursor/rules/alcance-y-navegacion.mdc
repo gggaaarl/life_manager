@@ -12,7 +12,9 @@ Guisela pide cambios puntuales. El agente no “mejora” layout, menú ni panta
 La app visible es **solo registro del día de ejercicios**.
 
 - Entrada: `/trainer` (también `/` y post-login).
-- Header: logo + Cerrar sesión. Sin Finanzas, sin Mis trabajos, sin roles, sin hub.
+- Header: logo + hamburguesa (correo y datos de Google, Registrar ejercicio, Cerrar sesión).
+- App: barra lateral con una sola opción, Registrar ejercicio.
+- Sin Finanzas, sin Mis trabajos, sin roles, sin hub.
 - Finanzas, salidas, taxi, nutrición, developer y home **existen en código** pero no se muestran. `/finance`, `/player`, `/driver`, `/home`, `/nutrition`, `/developer` redirigen a `/trainer`.
 - No reactivar esos menús ni jobs/roles salvo que Guisela lo pida explícito.
 
