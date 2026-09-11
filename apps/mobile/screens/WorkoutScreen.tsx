@@ -23,6 +23,7 @@ import {
 } from "@life-manager/shared/workout/api";
 import {
   MUSCLE_GROUPS,
+  MUSCLE_GROUP_COLORS,
   MUSCLE_GROUP_LABELS,
   SET_KINDS,
   SET_KIND_LABELS,
@@ -32,7 +33,9 @@ import {
   type MuscleGroup,
 } from "@life-manager/shared/workout/constants";
 import {
+  applySetFields,
   countSetsInEntry,
+  exerciseMuscles,
   formatSetLabel,
   groupByMuscle,
   numberToInput,
@@ -138,6 +141,13 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
     }
   }
 
+  function onSetFieldsChange(
+    setId: string,
+    fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+  ) {
+    setEntries((current) => applySetFields(current, setId, fields));
+  }
+
   const groups = groupByMuscle(entries);
   const setSummary = sessionSetSummary(entries);
 
@@ -215,6 +225,7 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
                       number={exerciseNumber}
                       entry={entry}
                       onRun={run}
+                      onSetFieldsChange={onSetFieldsChange}
                     />
                   );
                 })}
@@ -241,10 +252,10 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
             setPickerOpen(false);
           })
         }
-        onCreate={(name, muscleGroup) =>
+        onCreate={(name, muscleGroups) =>
           run(
             async () => {
-              await createAndAddExercise(supabase, userId, date, name, muscleGroup);
+              await createAndAddExercise(supabase, userId, date, name, muscleGroups);
               setPickerOpen(false);
             },
             { refreshCatalog: true },
@@ -260,22 +271,46 @@ type RunFn = (
   options?: { refreshCatalog?: boolean; refreshDay?: boolean },
 ) => Promise<void>;
 
+function MuscleBadges({
+  item,
+}: {
+  item: { muscleGroup: MuscleGroup; muscleGroups?: MuscleGroup[] };
+}) {
+  return (
+    <View style={styles.badgeRow}>
+      {exerciseMuscles(item).map((group) => (
+        <View key={group} style={[styles.badge, { backgroundColor: MUSCLE_GROUP_COLORS[group] }]}>
+          <Text style={styles.badgeText}>{MUSCLE_GROUP_LABELS[group]}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function ExerciseCard({
   number,
   entry,
   onRun,
+  onSetFieldsChange,
 }: {
   number: number;
   entry: WorkoutEntryView;
   onRun: RunFn;
+  onSetFieldsChange: (
+    setId: string,
+    fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+  ) => void;
 }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>
-          <Text style={styles.muted}>{number} </Text>
-          {entry.exerciseName}
-        </Text>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={styles.cardTitle}>
+            <Text style={styles.muted}>{number} </Text>
+            {entry.exerciseName}
+          </Text>
+          <MuscleBadges item={entry} />
+        </View>
         <Pressable onPress={() => onRun(() => deleteEntry(supabase, entry.id))}>
           <Text style={styles.muted}>Quitar</Text>
         </Pressable>
@@ -295,6 +330,7 @@ function ExerciseCard({
           sets={entry.sets}
           set={set}
           onRun={onRun}
+          onSetFieldsChange={onSetFieldsChange}
         />
       ))}
 
@@ -310,11 +346,16 @@ function SetEditor({
   sets,
   set,
   onRun,
+  onSetFieldsChange,
 }: {
   entryId: string;
   sets: WorkoutEntryView["sets"];
   set: WorkoutEntryView["sets"][number];
   onRun: RunFn;
+  onSetFieldsChange: (
+    setId: string,
+    fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+  ) => void;
 }) {
   const [weight, setWeight] = useState(numberToInput(set.weightKg));
   const [reps, setReps] = useState(numberToInput(set.reps));
@@ -332,16 +373,30 @@ function SetEditor({
     set.subsetNumber ===
       Math.max(...sets.filter((row) => row.setNumber === set.setNumber).map((row) => row.subsetNumber));
 
+  function live(nextWeight: string, nextReps: string, nextRir: string) {
+    try {
+      onSetFieldsChange(set.id, {
+        weightKg: parseOptionalNumber(nextWeight),
+        reps: parseOptionalInt(nextReps),
+        rir: parseOptionalRir(nextRir),
+      });
+    } catch {
+      return;
+    }
+  }
+
   function save() {
-    void onRun(
-      () =>
-        updateSetFields(supabase, set.id, {
-          weightKg: parseOptionalNumber(weight),
-          reps: parseOptionalInt(reps),
-          rir: parseOptionalRir(rir),
-        }),
-      { refreshDay: false },
-    );
+    try {
+      const fields = {
+        weightKg: parseOptionalNumber(weight),
+        reps: parseOptionalInt(reps),
+        rir: parseOptionalRir(rir),
+      };
+      onSetFieldsChange(set.id, fields);
+      void onRun(() => updateSetFields(supabase, set.id, fields), { refreshDay: false });
+    } catch {
+      return;
+    }
   }
 
   return (
@@ -350,7 +405,10 @@ function SetEditor({
         <Text style={[styles.setNumber, styles.colSet]}>{formatSetLabel(sets, set)}</Text>
         <TextInput
           value={weight}
-          onChangeText={setWeight}
+          onChangeText={(value) => {
+            setWeight(value);
+            live(value, reps, rir);
+          }}
           onBlur={save}
           keyboardType="decimal-pad"
           placeholder="—"
@@ -359,7 +417,10 @@ function SetEditor({
         />
         <TextInput
           value={reps}
-          onChangeText={setReps}
+          onChangeText={(value) => {
+            setReps(value);
+            live(weight, value, rir);
+          }}
           onBlur={save}
           keyboardType="number-pad"
           placeholder="—"
@@ -368,7 +429,10 @@ function SetEditor({
         />
         <TextInput
           value={rir}
-          onChangeText={setRir}
+          onChangeText={(value) => {
+            setRir(value);
+            live(weight, reps, value);
+          }}
           onBlur={save}
           keyboardType="decimal-pad"
           placeholder="—"
@@ -412,11 +476,11 @@ function AddExerciseModal({
   usedIds: Set<string>;
   onClose: () => void;
   onPick: (exerciseId: string) => void;
-  onCreate: (name: string, muscleGroup: MuscleGroup) => void;
+  onCreate: (name: string, muscleGroups: MuscleGroup[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [name, setName] = useState("");
-  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>("pecho");
+  const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>(["pecho"]);
 
   const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -448,6 +512,7 @@ function AddExerciseModal({
               {group.items.map((exercise) => (
                 <Pressable key={exercise.id} style={styles.pickRow} onPress={() => onPick(exercise.id)}>
                   <Text style={styles.pickText}>{exercise.name}</Text>
+                  <MuscleBadges item={exercise} />
                 </Pressable>
               ))}
             </View>
@@ -465,16 +530,24 @@ function AddExerciseModal({
             {MUSCLE_GROUPS.map((group) => (
               <Pressable
                 key={group}
-                style={[styles.kindChip, muscleGroup === group && styles.kindChipActive]}
-                onPress={() => setMuscleGroup(group)}
+                style={[styles.kindChip, muscleGroups.includes(group) && { backgroundColor: MUSCLE_GROUP_COLORS[group] }]}
+                onPress={() => {
+                  setMuscleGroups((current) => {
+                    if (current.includes(group)) {
+                      const next = current.filter((item) => item !== group);
+                      return next.length > 0 ? next : current;
+                    }
+                    return [...current, group];
+                  });
+                }}
               >
-                <Text style={[styles.kindText, muscleGroup === group && styles.kindTextActive]}>
+                <Text style={[styles.kindText, muscleGroups.includes(group) && styles.kindTextActive]}>
                   {MUSCLE_GROUP_LABELS[group]}
                 </Text>
               </Pressable>
             ))}
           </ScrollView>
-          <Pressable style={styles.primary} onPress={() => onCreate(name, muscleGroup)}>
+          <Pressable style={styles.primary} onPress={() => onCreate(name, muscleGroups)}>
             <Text style={styles.primaryText}>Crear</Text>
           </Pressable>
         </ScrollView>
@@ -517,7 +590,10 @@ const styles = StyleSheet.create({
   groupTitle: { fontSize: 13, fontWeight: "500", color: COLORS.muted, marginBottom: 2 },
   card: { gap: 0 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  cardTitle: { fontSize: 16, fontWeight: "600", color: COLORS.ink, flex: 1, paddingRight: 8, letterSpacing: -0.2 },
+  cardTitle: { fontSize: 16, fontWeight: "600", color: COLORS.ink, letterSpacing: -0.2 },
+  badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
+  badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeText: { color: "#fff", fontSize: 11, fontWeight: "600" },
   tableHead: { flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: COLORS.line, paddingBottom: 6 },
   headCell: { flex: 1, fontSize: 11, fontWeight: "500", color: COLORS.muted, textAlign: "center" },
   colSet: { width: 36, flex: 0, textAlign: "left" },

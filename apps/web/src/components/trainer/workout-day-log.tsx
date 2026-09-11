@@ -14,6 +14,7 @@ import {
 } from "@life-manager/shared/workout/api";
 import {
   MUSCLE_GROUPS,
+  MUSCLE_GROUP_COLORS,
   MUSCLE_GROUP_LABELS,
   SET_KINDS,
   SET_KIND_LABELS,
@@ -23,6 +24,7 @@ import {
 } from "@life-manager/shared/workout/constants";
 import {
   countSetsInEntry,
+  exerciseMuscles,
   formatSetLabel,
   groupByMuscle,
   numberToInput,
@@ -41,6 +43,10 @@ type Props = {
   entries: WorkoutEntryView[];
   onRefreshDay: () => Promise<unknown>;
   onRefreshCatalog: () => Promise<unknown>;
+  onSetFieldsChange: (
+    setId: string,
+    fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+  ) => void;
 };
 
 const cellInput =
@@ -49,6 +55,26 @@ const cellInput =
 const tableGrid =
   "grid grid-cols-[2.25rem_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)_minmax(2.75rem,0.85fr)_minmax(5.75rem,7rem)_1.5rem] items-center gap-x-1";
 
+function MuscleBadges({
+  item,
+}: {
+  item: { muscleGroup: MuscleGroup; muscleGroups?: MuscleGroup[] };
+}) {
+  return (
+    <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
+      {exerciseMuscles(item).map((group) => (
+        <span
+          key={group}
+          className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+          style={{ backgroundColor: MUSCLE_GROUP_COLORS[group] }}
+        >
+          {MUSCLE_GROUP_LABELS[group]}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export function WorkoutDayLog({
   date,
   userId,
@@ -56,6 +82,7 @@ export function WorkoutDayLog({
   entries,
   onRefreshDay,
   onRefreshCatalog,
+  onSetFieldsChange,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const muscleGroups = groupByMuscle(entries);
@@ -96,6 +123,7 @@ export function WorkoutDayLog({
                       entry={entry}
                       number={exerciseNumber}
                       onRefreshDay={onRefreshDay}
+                      onSetFieldsChange={onSetFieldsChange}
                     />
                   );
                 })}
@@ -135,10 +163,12 @@ function ExerciseBlock({
   entry,
   number,
   onRefreshDay,
+  onSetFieldsChange,
 }: {
   entry: WorkoutEntryView;
   number: number;
   onRefreshDay: () => Promise<unknown>;
+  onSetFieldsChange: Props["onSetFieldsChange"];
 }) {
   const [, startTransition] = useTransition();
   const supabase = useMemo(() => createClient(), []);
@@ -149,6 +179,7 @@ function ExerciseBlock({
         <h3 className="text-[16px] font-semibold tracking-tight text-ink">
           <span className="mr-2 font-medium text-muted">{number}</span>
           {entry.exerciseName}
+          <MuscleBadges item={entry} />
         </h3>
         <button
           type="button"
@@ -174,7 +205,14 @@ function ExerciseBlock({
       </div>
 
       {entry.sets.map((set) => (
-        <SetRow key={set.id} entryId={entry.id} sets={entry.sets} set={set} onRefreshDay={onRefreshDay} />
+        <SetRow
+          key={set.id}
+          entryId={entry.id}
+          sets={entry.sets}
+          set={set}
+          onRefreshDay={onRefreshDay}
+          onSetFieldsChange={onSetFieldsChange}
+        />
       ))}
 
       <button
@@ -198,11 +236,13 @@ function SetRow({
   sets,
   set,
   onRefreshDay,
+  onSetFieldsChange,
 }: {
   entryId: string;
   sets: WorkoutEntryView["sets"];
   set: WorkoutEntryView["sets"][number];
   onRefreshDay: () => Promise<unknown>;
+  onSetFieldsChange: Props["onSetFieldsChange"];
 }) {
   const [, startTransition] = useTransition();
   const supabase = useMemo(() => createClient(), []);
@@ -212,21 +252,38 @@ function SetRow({
     set.subsetNumber ===
       Math.max(...sets.filter((row) => row.setNumber === set.setNumber).map((row) => row.subsetNumber));
 
-  function saveFields(form: HTMLFormElement) {
+  function readFields(form: HTMLFormElement) {
     const data = new FormData(form);
-    startTransition(async () => {
-      await updateSetFields(supabase, set.id, {
-        weightKg: parseOptionalNumber(String(data.get("weightKg") ?? "")),
-        reps: parseOptionalInt(String(data.get("reps") ?? "")),
-        rir: parseOptionalRir(String(data.get("rir") ?? "")),
+    return {
+      weightKg: parseOptionalNumber(String(data.get("weightKg") ?? "")),
+      reps: parseOptionalInt(String(data.get("reps") ?? "")),
+      rir: parseOptionalRir(String(data.get("rir") ?? "")),
+    };
+  }
+
+  function saveFields(form: HTMLFormElement) {
+    try {
+      const fields = readFields(form);
+      onSetFieldsChange(set.id, fields);
+      startTransition(async () => {
+        await updateSetFields(supabase, set.id, fields);
       });
-    });
+    } catch {
+      return;
+    }
   }
 
   return (
     <div className="border-b border-line">
       <form
         className={`${tableGrid} py-1`}
+        onInput={(event) => {
+          try {
+            onSetFieldsChange(set.id, readFields(event.currentTarget));
+          } catch {
+            return;
+          }
+        }}
         onBlur={(event) => {
           const next = event.relatedTarget as Node | null;
           if (next && event.currentTarget.contains(next)) return;
@@ -332,7 +389,7 @@ function AddExercisePicker({
 }) {
   const [query, setQuery] = useState("");
   const [name, setName] = useState("");
-  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>("pecho");
+  const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>(["pecho"]);
   const [, startTransition] = useTransition();
   const supabase = useMemo(() => createClient(), []);
 
@@ -382,6 +439,7 @@ function AddExercisePicker({
                   }}
                 >
                   {exercise.name}
+                  <MuscleBadges item={exercise} />
                 </button>
               ))}
             </div>
@@ -393,7 +451,7 @@ function AddExercisePicker({
           onSubmit={(event) => {
             event.preventDefault();
             startTransition(async () => {
-              await createAndAddExercise(supabase, userId, date, name, muscleGroup);
+              await createAndAddExercise(supabase, userId, date, name, muscleGroups);
               await Promise.all([onRefreshDay(), onRefreshCatalog()]);
               onClose();
             });
@@ -407,23 +465,35 @@ function AddExercisePicker({
             placeholder="Nombre"
             className="w-full rounded-xl bg-sand px-3 py-2.5 text-[15px] outline-none placeholder:text-muted"
           />
-          <div className="flex gap-2">
-            <select
-              name="muscleGroup"
-              value={muscleGroup}
-              onChange={(event) => setMuscleGroup(event.target.value as MuscleGroup)}
-              className="flex-1 rounded-xl bg-sand px-3 py-2.5 text-[15px]"
-            >
-              {MUSCLE_GROUPS.map((group) => (
-                <option key={group} value={group}>
+          <div className="flex flex-wrap gap-1.5">
+            {MUSCLE_GROUPS.map((group) => {
+              const selected = muscleGroups.includes(group);
+              return (
+                <button
+                  key={group}
+                  type="button"
+                  onClick={() => {
+                    setMuscleGroups((current) => {
+                      if (selected) {
+                        const next = current.filter((item) => item !== group);
+                        return next.length > 0 ? next : current;
+                      }
+                      return [...current, group];
+                    });
+                  }}
+                  className="rounded-full px-2.5 py-1 text-[12px] font-medium text-white"
+                  style={{
+                    backgroundColor: selected ? MUSCLE_GROUP_COLORS[group] : "#d4d4d8",
+                  }}
+                >
                   {MUSCLE_GROUP_LABELS[group]}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="rounded-full bg-teal px-5 py-2.5 text-[15px] font-semibold text-white">
-              Crear
-            </button>
+                </button>
+              );
+            })}
           </div>
+          <button type="submit" className="rounded-full bg-teal px-5 py-2.5 text-[15px] font-semibold text-white">
+            Crear
+          </button>
         </form>
       </div>
     </div>

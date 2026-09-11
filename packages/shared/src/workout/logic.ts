@@ -22,6 +22,7 @@ export type WorkoutEntryView = {
   exerciseId: string;
   exerciseName: string;
   muscleGroup: MuscleGroup;
+  muscleGroups: MuscleGroup[];
   sets: WorkoutSetView[];
 };
 
@@ -29,6 +30,7 @@ export type CatalogExercise = {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
+  muscleGroups: MuscleGroup[];
 };
 
 export type MuscleExerciseGroup<T> = {
@@ -104,18 +106,45 @@ export function countSetsInEntry(entry: Pick<WorkoutEntryView, "sets">): number 
   return counted.size;
 }
 
+export function exerciseMuscles(item: {
+  muscleGroup: MuscleGroup;
+  muscleGroups?: MuscleGroup[];
+}): MuscleGroup[] {
+  const listed = item.muscleGroups?.length ? item.muscleGroups : [item.muscleGroup];
+  return MUSCLE_GROUPS.filter((group) => listed.includes(group));
+}
+
+export function applySetFields(
+  entries: WorkoutEntryView[],
+  setId: string,
+  fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+): WorkoutEntryView[] {
+  return entries.map((entry) => ({
+    ...entry,
+    sets: entry.sets.map((set) => (set.id === setId ? { ...set, ...fields } : set)),
+  }));
+}
+
 export function sessionSetSummary(entries: WorkoutEntryView[]): {
   total: number;
   byMuscle: Array<{ muscleGroup: MuscleGroup; label: string; sets: number }>;
 } {
-  const byMuscle = groupByMuscle(entries).map((group) => ({
-    muscleGroup: group.muscleGroup,
-    label: group.label,
-    sets: group.items.reduce((sum, entry) => sum + countSetsInEntry(entry), 0),
-  }));
+  const totals = new Map<MuscleGroup, number>();
+  let total = 0;
+  for (const entry of entries) {
+    const sets = countSetsInEntry(entry);
+    total += sets;
+    for (const muscle of exerciseMuscles(entry)) {
+      totals.set(muscle, (totals.get(muscle) ?? 0) + sets);
+    }
+  }
   return {
-    total: byMuscle.reduce((sum, group) => sum + group.sets, 0),
-    byMuscle,
+    total,
+    byMuscle: MUSCLE_GROUPS.flatMap((muscleGroup) => {
+      const sets = totals.get(muscleGroup);
+      if (!sets) return [];
+      return [{ muscleGroup, label: MUSCLE_GROUP_LABELS[muscleGroup], sets }];
+    }),
   };
 }
 

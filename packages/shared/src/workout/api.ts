@@ -1,4 +1,4 @@
-import { isSpecialSetKind, type MuscleGroup, type SetKind } from "./constants";
+import { isMuscleGroup, isSpecialSetKind, type MuscleGroup, type SetKind } from "./constants";
 import {
   nextSetNumber,
   nextSubsetNumber,
@@ -41,7 +41,13 @@ function fail(error: { message: string } | null, fallback: string): never {
 }
 
 function asMuscleGroup(value: unknown): MuscleGroup {
-  return value as MuscleGroup;
+  return isMuscleGroup(String(value)) ? (value as MuscleGroup) : "otro";
+}
+
+function asMuscleGroups(raw: unknown, fallback: unknown): MuscleGroup[] {
+  const listed = Array.isArray(raw) ? raw.map(asMuscleGroup) : [];
+  const unique = [...new Set(listed.length > 0 ? listed : [asMuscleGroup(fallback)])];
+  return unique.length > 0 ? unique : ["otro"];
 }
 
 function asSetKind(value: unknown): SetKind {
@@ -69,17 +75,21 @@ function mapSet(row: Record<string, unknown>): WorkoutSetView {
 export async function listCatalogExercises(supabase: unknown): Promise<CatalogExercise[]> {
   const { data, error } = await db(supabase)
     .from("exercises")
-    .select("id, name, muscle_group")
+    .select("id, name, muscle_group, muscle_groups")
     .eq("is_active", true)
     .order("name", { ascending: true });
 
   if (error) fail(error, "No se pudo cargar el catálogo.");
 
-  return ((data as Record<string, unknown>[] | null) ?? []).map((row) => ({
-    id: String(row.id),
-    name: String(row.name),
-    muscleGroup: asMuscleGroup(row.muscle_group),
-  }));
+  return ((data as Record<string, unknown>[] | null) ?? []).map((row) => {
+    const muscleGroups = asMuscleGroups(row.muscle_groups, row.muscle_group);
+    return {
+      id: String(row.id),
+      name: String(row.name),
+      muscleGroup: muscleGroups[0] ?? asMuscleGroup(row.muscle_group),
+      muscleGroups,
+    };
+  });
 }
 
 export async function loadWorkoutDay(
@@ -99,7 +109,7 @@ export async function loadWorkoutDay(
 
   const { data, error } = await db(supabase)
     .from("workout_entries")
-    .select("id, sort_order, exercise_id, exercises(name, muscle_group), workout_sets(*)")
+    .select("id, sort_order, exercise_id, exercises(name, muscle_group, muscle_groups), workout_sets(*)")
     .eq("session_id", String(session.id))
     .order("sort_order", { ascending: true });
 
@@ -109,12 +119,14 @@ export async function loadWorkoutDay(
     const exercise = Array.isArray(row.exercises) ? row.exercises[0] : row.exercises;
     const exerciseRow = (exercise ?? {}) as Record<string, unknown>;
     const sets = ((row.workout_sets as Record<string, unknown>[] | null) ?? []).map(mapSet);
+    const muscleGroups = asMuscleGroups(exerciseRow.muscle_groups, exerciseRow.muscle_group ?? "otro");
     return {
       id: String(row.id),
       sortOrder: Number(row.sort_order),
       exerciseId: String(row.exercise_id),
       exerciseName: String(exerciseRow.name ?? "Ejercicio"),
-      muscleGroup: asMuscleGroup(exerciseRow.muscle_group ?? "otro"),
+      muscleGroup: muscleGroups[0] ?? "otro",
+      muscleGroups,
       sets: sortSets(sets),
     };
   });
@@ -250,19 +262,24 @@ export async function createAndAddExercise(
   userId: string,
   sessionDate: string,
   name: string,
-  muscleGroup: MuscleGroup,
+  muscleGroupsInput: MuscleGroup[] | MuscleGroup,
 ): Promise<void> {
   const trimmed = name.trim();
   if (!trimmed) {
     throw new Error("Escribe el nombre del ejercicio.");
   }
+  const muscleGroups = asMuscleGroups(
+    Array.isArray(muscleGroupsInput) ? muscleGroupsInput : [muscleGroupsInput],
+    "otro",
+  );
 
   const created = await db(supabase)
     .from("exercises")
     .insert({
       user_id: userId,
       name: trimmed,
-      muscle_group: muscleGroup,
+      muscle_group: muscleGroups[0],
+      muscle_groups: muscleGroups,
     })
     .select("id")
     .single();

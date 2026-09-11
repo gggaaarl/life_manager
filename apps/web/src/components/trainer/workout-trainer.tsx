@@ -6,7 +6,11 @@ import { WorkoutDayLog } from "@/components/trainer/workout-day-log";
 import { createClient } from "@/lib/supabase/client";
 import { listCatalogExercises, loadWorkoutDay } from "@life-manager/shared/workout/api";
 import { todayInLima } from "@life-manager/shared/workout/constants";
-import type { CatalogExercise, WorkoutEntryView } from "@life-manager/shared/workout/logic";
+import {
+  applySetFields,
+  type CatalogExercise,
+  type WorkoutEntryView,
+} from "@life-manager/shared/workout/logic";
 
 type Props = {
   userId: string;
@@ -68,6 +72,13 @@ export function WorkoutTrainer({
     return next;
   }
 
+  function onSetFieldsChange(
+    setId: string,
+    fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+  ) {
+    setEntries((current) => applySetFields(current, setId, fields));
+  }
+
   return (
     <>
       <WorkoutDateNav value={date} onChange={setDate} />
@@ -82,6 +93,7 @@ export function WorkoutTrainer({
             entries={entries}
             onRefreshDay={refreshDay}
             onRefreshCatalog={refreshCatalog}
+            onSetFieldsChange={onSetFieldsChange}
           />
         )}
       </div>

@@ -16,6 +16,22 @@ export const MUSCLE_GROUPS = [
 
 export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 
+export const MUSCLE_GROUP_COLORS: Record<MuscleGroup, string> = {
+  pecho: "#e11d48",
+  espalda: "#2563eb",
+  hombros: "#d97706",
+  biceps: "#7c3aed",
+  triceps: "#0f766e",
+  cuadriceps: "#db2777",
+  isquiotibiales: "#4f46e5",
+  gluteos: "#c026d3",
+  pantorrillas: "#65a30d",
+  core: "#ea580c",
+  antebrazos: "#78716c",
+  cardio: "#0891b2",
+  otro: "#6b7280",
+};
+
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   pecho: "Pecho",
   espalda: "Espalda",
