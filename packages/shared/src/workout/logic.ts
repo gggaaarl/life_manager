@@ -114,6 +114,25 @@ export function exerciseMuscles(item: {
   return MUSCLE_GROUPS.filter((group) => listed.includes(group));
 }
 
+export function orderedEntries(entries: WorkoutEntryView[]): WorkoutEntryView[] {
+  return [...entries].sort((a, b) => a.sortOrder - b.sortOrder || a.exerciseName.localeCompare(b.exerciseName));
+}
+
+export function moveEntryToPosition(
+  entries: WorkoutEntryView[],
+  entryId: string,
+  position: number,
+): WorkoutEntryView[] {
+  const ordered = orderedEntries(entries);
+  const from = ordered.findIndex((entry) => entry.id === entryId);
+  if (from < 0) return ordered;
+  const to = Math.max(0, Math.min(ordered.length - 1, Math.trunc(position) - 1));
+  const next = [...ordered];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next.map((entry, index) => ({ ...entry, sortOrder: index + 1 }));
+}
+
 export function applySetFields(
   entries: WorkoutEntryView[],
   setId: string,

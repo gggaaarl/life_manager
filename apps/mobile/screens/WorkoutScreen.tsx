@@ -19,6 +19,7 @@ import {
   deleteSetRow,
   listCatalogExercises,
   loadWorkoutDay,
+  reorderDayEntry,
   updateSetFields,
 } from "@life-manager/shared/workout/api";
 import {
@@ -34,11 +35,12 @@ import {
 } from "@life-manager/shared/workout/constants";
 import {
   applySetFields,
-  countSetsInEntry,
   exerciseMuscles,
   formatSetLabel,
   groupByMuscle,
+  moveEntryToPosition,
   numberToInput,
+  orderedEntries,
   sessionSetSummary,
   parseOptionalInt,
   parseOptionalNumber,
@@ -148,7 +150,12 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
     setEntries((current) => applySetFields(current, setId, fields));
   }
 
-  const groups = groupByMuscle(entries);
+  async function onReorderEntry(entryId: string, position: number) {
+    setEntries((current) => moveEntryToPosition(current, entryId, position));
+    await run(() => reorderDayEntry(supabase, entryId, position));
+  }
+
+  const listed = orderedEntries(entries);
   const setSummary = sessionSetSummary(entries);
 
   return (
@@ -208,31 +215,16 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
           </View>
         ) : null}
 
-        {(() => {
-          let exerciseNumber = 0;
-          return groups.map((group) => {
-            const groupSets = group.items.reduce((sum, entry) => sum + countSetsInEntry(entry), 0);
-            return (
-              <View key={group.muscleGroup} style={styles.group}>
-                <Text style={styles.groupTitle}>
-                  {group.label} · {groupSets} {groupSets === 1 ? "set" : "sets"}
-                </Text>
-                {group.items.map((entry) => {
-                  exerciseNumber += 1;
-                  return (
-                    <ExerciseCard
-                      key={entry.id}
-                      number={exerciseNumber}
-                      entry={entry}
-                      onRun={run}
-                      onSetFieldsChange={onSetFieldsChange}
-                    />
-                  );
-                })}
-              </View>
-            );
-          });
-        })()}
+        {listed.map((entry, index) => (
+          <ExerciseCard
+            key={entry.id}
+            number={index + 1}
+            entry={entry}
+            onRun={run}
+            onSetFieldsChange={onSetFieldsChange}
+            onReorderEntry={onReorderEntry}
+          />
+        ))}
 
         <Pressable style={styles.primary} onPress={() => setPickerOpen(true)}>
           <Text style={styles.primaryText}>Agregar ejercicio</Text>
@@ -292,6 +284,7 @@ function ExerciseCard({
   entry,
   onRun,
   onSetFieldsChange,
+  onReorderEntry,
 }: {
   number: number;
   entry: WorkoutEntryView;
@@ -300,15 +293,35 @@ function ExerciseCard({
     setId: string,
     fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
   ) => void;
+  onReorderEntry: (entryId: string, position: number) => Promise<void>;
 }) {
+  const [orderText, setOrderText] = useState(String(number));
+
+  useEffect(() => {
+    setOrderText(String(number));
+  }, [number]);
+
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={{ flex: 1, paddingRight: 8 }}>
-          <Text style={styles.cardTitle}>
-            <Text style={styles.muted}>{number} </Text>
-            {entry.exerciseName}
-          </Text>
+          <View style={styles.titleRow}>
+            <TextInput
+              value={orderText}
+              onChangeText={setOrderText}
+              onBlur={() => {
+                const next = Number.parseInt(orderText, 10);
+                if (!Number.isInteger(next) || next === number) {
+                  setOrderText(String(number));
+                  return;
+                }
+                void onReorderEntry(entry.id, next);
+              }}
+              keyboardType="number-pad"
+              style={styles.orderInput}
+            />
+            <Text style={styles.cardTitle}>{entry.exerciseName}</Text>
+          </View>
           <MuscleBadges item={entry} />
         </View>
         <Pressable onPress={() => onRun(() => deleteEntry(supabase, entry.id))}>
@@ -590,7 +603,19 @@ const styles = StyleSheet.create({
   groupTitle: { fontSize: 13, fontWeight: "500", color: COLORS.muted, marginBottom: 2 },
   card: { gap: 0 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  cardTitle: { fontSize: 16, fontWeight: "600", color: COLORS.ink, letterSpacing: -0.2 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  orderInput: {
+    width: 32,
+    height: 32,
+    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "500",
+    color: COLORS.ink,
+    backgroundColor: COLORS.sand,
+    borderRadius: 6,
+    paddingVertical: 0,
+  },
+  cardTitle: { fontSize: 16, fontWeight: "600", color: COLORS.ink, letterSpacing: -0.2, flex: 1 },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
   badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { color: "#fff", fontSize: 11, fontWeight: "600" },

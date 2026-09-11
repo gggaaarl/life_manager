@@ -23,11 +23,11 @@ import {
   type MuscleGroup,
 } from "@life-manager/shared/workout/constants";
 import {
-  countSetsInEntry,
   exerciseMuscles,
   formatSetLabel,
   groupByMuscle,
   numberToInput,
+  orderedEntries,
   sessionSetSummary,
   parseOptionalInt,
   parseOptionalNumber,
@@ -47,6 +47,7 @@ type Props = {
     setId: string,
     fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
   ) => void;
+  onReorderEntry: (entryId: string, position: number) => Promise<void> | void;
 };
 
 const cellInput =
@@ -83,11 +84,11 @@ export function WorkoutDayLog({
   onRefreshDay,
   onRefreshCatalog,
   onSetFieldsChange,
+  onReorderEntry,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const muscleGroups = groupByMuscle(entries);
+  const listed = orderedEntries(entries);
   const setSummary = sessionSetSummary(entries);
-  let exerciseNumber = 0;
 
   return (
     <div className="pb-24">
@@ -107,30 +108,18 @@ export function WorkoutDayLog({
                 .join(" · ")}
             </p>
           </div>
-          {muscleGroups.map((group) => {
-            const groupSets = group.items.reduce((sum, entry) => sum + countSetsInEntry(entry), 0);
-            return (
-            <section key={group.muscleGroup}>
-              <p className="mb-3 text-[13px] font-medium text-muted">
-                {group.label} · {groupSets} {groupSets === 1 ? "set" : "sets"}
-              </p>
-              <div className="space-y-7">
-                {group.items.map((entry) => {
-                  exerciseNumber += 1;
-                  return (
-                    <ExerciseBlock
-                      key={entry.id}
-                      entry={entry}
-                      number={exerciseNumber}
-                      onRefreshDay={onRefreshDay}
-                      onSetFieldsChange={onSetFieldsChange}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-            );
-          })}
+          <div className="space-y-7">
+            {listed.map((entry, index) => (
+              <ExerciseBlock
+                key={entry.id}
+                entry={entry}
+                number={index + 1}
+                onRefreshDay={onRefreshDay}
+                onSetFieldsChange={onSetFieldsChange}
+                onReorderEntry={onReorderEntry}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -164,11 +153,13 @@ function ExerciseBlock({
   number,
   onRefreshDay,
   onSetFieldsChange,
+  onReorderEntry,
 }: {
   entry: WorkoutEntryView;
   number: number;
   onRefreshDay: () => Promise<unknown>;
   onSetFieldsChange: Props["onSetFieldsChange"];
+  onReorderEntry: Props["onReorderEntry"];
 }) {
   const [, startTransition] = useTransition();
   const supabase = useMemo(() => createClient(), []);
@@ -176,10 +167,27 @@ function ExerciseBlock({
   return (
     <article>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-[16px] font-semibold tracking-tight text-ink">
-          <span className="mr-2 font-medium text-muted">{number}</span>
-          {entry.exerciseName}
-          <MuscleBadges item={entry} />
+        <h3 className="flex min-w-0 items-center text-[16px] font-semibold tracking-tight text-ink">
+          <input
+            key={number}
+            type="text"
+            inputMode="numeric"
+            defaultValue={String(number)}
+            aria-label="Orden"
+            className="mr-2 h-8 w-8 rounded-md border-0 bg-sand text-center text-[15px] font-medium tabular-nums text-ink outline-none focus:ring-1 focus:ring-teal/30"
+            onBlur={(event) => {
+              const next = Number.parseInt(event.currentTarget.value, 10);
+              if (!Number.isInteger(next) || next === number) {
+                event.currentTarget.value = String(number);
+                return;
+              }
+              void onReorderEntry(entry.id, next);
+            }}
+          />
+          <span className="min-w-0">
+            {entry.exerciseName}
+            <MuscleBadges item={entry} />
+          </span>
         </h3>
         <button
           type="button"

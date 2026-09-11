@@ -1,5 +1,6 @@
 import { isMuscleGroup, isSpecialSetKind, type MuscleGroup, type SetKind } from "./constants";
 import {
+  moveEntryToPosition,
   nextSetNumber,
   nextSubsetNumber,
   setNumbersAfterDeletingSet,
@@ -230,7 +231,7 @@ export async function addExerciseToDay(
 
   if (last.error) fail(last.error, "No se pudo leer el día.");
 
-  const sortOrder = last.data?.sort_order == null ? 0 : Number(last.data.sort_order) + 1;
+  const sortOrder = last.data?.sort_order == null ? 1 : Number(last.data.sort_order) + 1;
   const created = await db(supabase)
     .from("workout_entries")
     .insert({
@@ -413,7 +414,84 @@ export async function deleteSetRow(supabase: unknown, setId: string): Promise<vo
   }
 }
 
+async function writeEntryOrder(
+  supabase: unknown,
+  rows: Array<{ id: string; sortOrder: number }>,
+): Promise<void> {
+  for (const [index, row] of rows.entries()) {
+    const temp = await db(supabase)
+      .from("workout_entries")
+      .update({ sort_order: -(index + 1) })
+      .eq("id", row.id);
+    if (temp.error) fail(temp.error, "No se pudo reordenar.");
+  }
+  for (const row of rows) {
+    const saved = await db(supabase)
+      .from("workout_entries")
+      .update({ sort_order: row.sortOrder })
+      .eq("id", row.id);
+    if (saved.error) fail(saved.error, "No se pudo reordenar.");
+  }
+}
+
+export async function reorderDayEntry(
+  supabase: unknown,
+  entryId: string,
+  position: number,
+): Promise<void> {
+  const current = await db(supabase)
+    .from("workout_entries")
+    .select("id, session_id")
+    .eq("id", entryId)
+    .single();
+  if (current.error || !current.data?.session_id) fail(current.error, "Ejercicio no encontrado.");
+
+  const siblings = await db(supabase)
+    .from("workout_entries")
+    .select("id, sort_order")
+    .eq("session_id", String(current.data.session_id))
+    .order("sort_order", { ascending: true });
+  if (siblings.error) fail(siblings.error, "No se pudo leer el orden.");
+
+  const asEntries = ((siblings.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
+    id: String(row.id),
+    sortOrder: Number(row.sort_order),
+    exerciseId: "",
+    exerciseName: "",
+    muscleGroup: "otro" as const,
+    muscleGroups: ["otro" as const],
+    sets: [],
+  }));
+  const next = moveEntryToPosition(asEntries, entryId, position);
+  await writeEntryOrder(
+    supabase,
+    next.map((entry) => ({ id: entry.id, sortOrder: entry.sortOrder })),
+  );
+}
+
 export async function deleteEntry(supabase: unknown, entryId: string): Promise<void> {
+  const current = await db(supabase)
+    .from("workout_entries")
+    .select("id, session_id")
+    .eq("id", entryId)
+    .single();
+  if (current.error || !current.data?.session_id) fail(current.error, "No se pudo quitar el ejercicio.");
+
   const removed = await db(supabase).from("workout_entries").delete().eq("id", entryId);
   if (removed.error) fail(removed.error, "No se pudo quitar el ejercicio.");
+
+  const siblings = await db(supabase)
+    .from("workout_entries")
+    .select("id, sort_order")
+    .eq("session_id", String(current.data.session_id))
+    .order("sort_order", { ascending: true });
+  if (siblings.error) fail(siblings.error, "No se pudo reordenar.");
+
+  const remaining = ((siblings.data as Record<string, unknown>[] | null) ?? []).map((row, index) => ({
+    id: String(row.id),
+    sortOrder: index + 1,
+  }));
+  if (remaining.length > 0) {
+    await writeEntryOrder(supabase, remaining);
+  }
 }

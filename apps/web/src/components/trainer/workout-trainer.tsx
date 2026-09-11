@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { WorkoutDateNav } from "@/components/trainer/workout-date-nav";
 import { WorkoutDayLog } from "@/components/trainer/workout-day-log";
 import { createClient } from "@/lib/supabase/client";
-import { listCatalogExercises, loadWorkoutDay } from "@life-manager/shared/workout/api";
+import { listCatalogExercises, loadWorkoutDay, reorderDayEntry } from "@life-manager/shared/workout/api";
 import { todayInLima } from "@life-manager/shared/workout/constants";
 import {
   applySetFields,
+  moveEntryToPosition,
   type CatalogExercise,
   type WorkoutEntryView,
 } from "@life-manager/shared/workout/logic";
@@ -79,6 +80,12 @@ export function WorkoutTrainer({
     setEntries((current) => applySetFields(current, setId, fields));
   }
 
+  async function onReorderEntry(entryId: string, position: number) {
+    setEntries((current) => moveEntryToPosition(current, entryId, position));
+    await reorderDayEntry(supabase, entryId, position);
+    await refreshDay();
+  }
+
   return (
     <>
       <WorkoutDateNav value={date} onChange={setDate} />
@@ -94,6 +101,7 @@ export function WorkoutTrainer({
             onRefreshDay={refreshDay}
             onRefreshCatalog={refreshCatalog}
             onSetFieldsChange={onSetFieldsChange}
+            onReorderEntry={onReorderEntry}
           />
         )}
       </div>
