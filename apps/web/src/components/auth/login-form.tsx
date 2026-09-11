@@ -44,14 +44,14 @@ export function LoginForm({ errorMessage }: Props) {
       setLoading(null);
       return;
     }
-    window.location.href = "/finance";
+    window.location.href = "/trainer";
   }
 
   const error = localError ?? errorMessage;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col">
-      <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+      <h2 className="text-[22px] font-semibold tracking-tight text-ink sm:text-2xl">
         Inicio de sesión
       </h2>
 
@@ -109,7 +109,7 @@ export function LoginForm({ errorMessage }: Props) {
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-line" />
-        <span className="text-xs uppercase tracking-wide text-muted">o</span>
+        <span className="text-[13px] text-muted">o</span>
         <div className="h-px flex-1 bg-line" />
       </div>
 

@@ -21,5 +21,5 @@ export default async function RootPage({ searchParams }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  redirect(user ? "/finance" : "/login");
+  redirect(user ? "/trainer" : "/login");
 }

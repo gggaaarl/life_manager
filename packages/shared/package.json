@@ -14,7 +14,10 @@
     "./finance/food": "./src/finance/food.ts",
     "./finance/expense-items": "./src/finance/expense-items.ts",
     "./game/constants": "./src/game/constants.ts",
-    "./game/job-nav": "./src/game/job-nav.ts"
+    "./game/job-nav": "./src/game/job-nav.ts",
+    "./workout/constants": "./src/workout/constants.ts",
+    "./workout/logic": "./src/workout/logic.ts",
+    "./workout/api": "./src/workout/api.ts"
   },
   "devDependencies": {
     "typescript": "^5"

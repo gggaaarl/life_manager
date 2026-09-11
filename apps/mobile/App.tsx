@@ -1,37 +1,31 @@
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import type { Session } from "@supabase/supabase-js";
-import { canAccessPlayerMenu, getProfileAccess } from "@life-manager/shared/player/access";
-import { signInWithGoogle, signOut } from "./lib/auth";
+import { signOut } from "./lib/auth";
 import { supabase } from "./lib/supabase";
+import { LoginScreen } from "./screens/LoginScreen";
+import { WorkoutScreen } from "./screens/WorkoutScreen";
 
 const COLORS = {
-  void: "#ffffff",
-  sand: "#f7f8f6",
-  panel: "#ffffff",
-  line: "#e2e6df",
-  ink: "#1a2419",
-  muted: "#6b7566",
-  sage: "#7d9168",
-  sageDark: "#6b7f59",
-  danger: "#b42318",
+  sand: "#f7f7f8",
+  teal: "#5b4dff",
 };
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppReady />
+    </SafeAreaProvider>
+  );
+}
+
+function AppReady() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPlayerMenu, setShowPlayerMenu] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -48,29 +42,6 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!session?.user) {
-      setShowPlayerMenu(false);
-      return;
-    }
-
-    getProfileAccess(supabase, session.user.id).then((profile) => {
-      setShowPlayerMenu(canAccessPlayerMenu(profile, session.user.id));
-    });
-  }, [session]);
-
-  async function handleSignIn() {
-    setBusy(true);
-    setError(null);
-    try {
-      await signInWithGoogle();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function handleSignOut() {
     setBusy(true);
     setError(null);
@@ -85,67 +56,35 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={[styles.centered, styles.screen]}>
-        <ActivityIndicator size="large" color={COLORS.sageDark} />
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={COLORS.teal} />
       </View>
     );
   }
 
   if (!session) {
     return (
-      <SafeAreaView style={styles.screen}>
-        <View style={styles.loginWrap}>
-          <Text style={styles.brandLine1}>NATURALEZA</Text>
-          <Text style={styles.brandLine2}>CRUEL</Text>
-          <Pressable
-            style={[styles.button, busy && styles.buttonDisabled]}
-            onPress={handleSignIn}
-            disabled={busy}
-          >
-            <Text style={styles.buttonText}>
-              {busy ? "Conectando..." : "Continuar con Google"}
-            </Text>
-          </Pressable>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-        </View>
+      <>
+        <LoginScreen
+          busy={busy}
+          error={error}
+          onBusy={setBusy}
+          onError={setError}
+        />
         <StatusBar style="dark" />
-      </SafeAreaView>
+      </>
     );
   }
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.kicker}>HUB</Text>
-        <Text style={styles.brandLine1}>NATURALEZA</Text>
-        <Text style={styles.brandLine2Small}>CRUEL</Text>
-        <Text style={styles.email}>{session.user.email}</Text>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Jobs activos</Text>
-          <Text style={styles.cardBody}>TRAINEE · DRIVER · PLAYER según tu perfil.</Text>
-        </View>
-
-        {showPlayerMenu ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Salidas</Text>
-            <Text style={styles.cardBody}>
-              Módulo PLAYER disponible en web. Misma base de datos.
-            </Text>
-          </View>
-        ) : null}
-
-        <Pressable
-          style={[styles.buttonOutline, busy && styles.buttonDisabled]}
-          onPress={handleSignOut}
-          disabled={busy}
-        >
-          <Text style={styles.buttonOutlineText}>Cerrar sesión</Text>
-        </Pressable>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </ScrollView>
-      <StatusBar style="light" />
+      <WorkoutScreen
+        userId={session.user.id}
+        email={session.user.email}
+        onSignOut={handleSignOut}
+        signingOut={busy}
+      />
+      <StatusBar style="dark" />
     </SafeAreaView>
   );
 }
@@ -159,96 +98,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
-  },
-  loginWrap: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-    gap: 8,
-  },
-  content: {
-    padding: 24,
-    gap: 16,
-  },
-  kicker: {
-    color: COLORS.sageDark,
-    fontWeight: "700",
-    letterSpacing: 2,
-    fontSize: 12,
-  },
-  brandLine1: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: COLORS.ink,
-    letterSpacing: -0.5,
-  },
-  brandLine2: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: COLORS.sage,
-    letterSpacing: -0.5,
-    marginBottom: 28,
-  },
-  brandLine2Small: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: COLORS.sage,
-    marginTop: -8,
-    marginBottom: 4,
-  },
-  email: {
-    color: COLORS.muted,
-    marginBottom: 8,
-  },
-  card: {
-    backgroundColor: COLORS.panel,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    padding: 16,
-    gap: 8,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.ink,
-  },
-  cardBody: {
-    color: COLORS.muted,
-    lineHeight: 22,
-  },
-  button: {
-    backgroundColor: COLORS.sageDark,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  buttonOutline: {
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonOutlineText: {
-    color: COLORS.muted,
-    fontWeight: "600",
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  error: {
-    color: COLORS.danger,
-    marginTop: 12,
-    textAlign: "center",
+    backgroundColor: COLORS.sand,
   },
 });

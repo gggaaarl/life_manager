@@ -1,0 +1,492 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import {
+  addExerciseToDay,
+  addSet,
+  addSubset,
+  changeSetKind,
+  createAndAddExercise,
+  deleteEntry,
+  deleteSetRow,
+  listCatalogExercises,
+  loadWorkoutDay,
+  updateSetFields,
+} from "@life-manager/shared/workout/api";
+import {
+  MUSCLE_GROUPS,
+  MUSCLE_GROUP_LABELS,
+  SET_KINDS,
+  SET_KIND_LABELS,
+  isSpecialSetKind,
+  shiftDate,
+  todayInLima,
+  type MuscleGroup,
+} from "@life-manager/shared/workout/constants";
+import {
+  formatSetLabel,
+  groupByMuscle,
+  numberToInput,
+  parseOptionalInt,
+  parseOptionalNumber,
+  parseOptionalRir,
+  type CatalogExercise,
+  type WorkoutEntryView,
+} from "@life-manager/shared/workout/logic";
+import { supabase } from "../lib/supabase";
+
+const COLORS = {
+  sand: "#f7f7f8",
+  panel: "#ffffff",
+  line: "#ececee",
+  ink: "#111118",
+  muted: "#8b8d93",
+  sage: "#6d5ef5",
+  sageDark: "#5b4dff",
+  danger: "#e11d48",
+};
+
+function formatDayLabel(dateYmd: string): string {
+  const [year, month, day] = dateYmd.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-PE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(year, month - 1, day));
+}
+
+type Props = {
+  userId: string;
+  email?: string | null;
+  onSignOut: () => void;
+  signingOut: boolean;
+};
+
+export function WorkoutScreen({ userId, email, onSignOut, signingOut }: Props) {
+  const [date, setDate] = useState(todayInLima);
+  const [catalog, setCatalog] = useState<CatalogExercise[]>([]);
+  const [entries, setEntries] = useState<WorkoutEntryView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const reload = useCallback(async () => {
+    const [nextCatalog, nextEntries] = await Promise.all([
+      listCatalogExercises(supabase),
+      loadWorkoutDay(supabase, userId, date),
+    ]);
+    setCatalog(nextCatalog);
+    setEntries(nextEntries);
+  }, [date, userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    reload()
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "No se pudo cargar el día.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
+
+  async function run(action: () => Promise<void>) {
+    setError(null);
+    try {
+      await action();
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar.");
+    }
+  }
+
+  const groups = groupByMuscle(entries);
+
+  return (
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.dateRow}>
+          <Pressable style={styles.dateBtn} onPress={() => setDate((value) => shiftDate(value, -1))}>
+            <Text style={styles.dateBtnText}>‹</Text>
+          </Pressable>
+          <View style={styles.dateCenter}>
+            <Text style={styles.title}>Entrenamiento</Text>
+            <Text style={styles.email}>{formatDayLabel(date)}</Text>
+          </View>
+          <Pressable style={styles.dateBtn} onPress={() => setDate((value) => shiftDate(value, 1))}>
+            <Text style={styles.dateBtnText}>›</Text>
+          </Pressable>
+        </View>
+
+        {loading ? <ActivityIndicator color={COLORS.sageDark} style={{ marginTop: 24 }} /> : null}
+
+        {!loading && entries.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.muted}>Todavía no hay ejercicios en este día.</Text>
+          </View>
+        ) : null}
+
+        {groups.map((group) => (
+          <View key={group.muscleGroup} style={styles.group}>
+            <Text style={styles.groupTitle}>{group.label}</Text>
+            {group.items.map((entry, index) => (
+              <ExerciseCard
+                key={entry.id}
+                number={index + 1}
+                entry={entry}
+                onRun={run}
+              />
+            ))}
+          </View>
+        ))}
+
+        <Pressable style={styles.primary} onPress={() => setPickerOpen(true)}>
+          <Text style={styles.primaryText}>Agregar ejercicio</Text>
+        </Pressable>
+
+        <Pressable style={styles.outline} onPress={onSignOut} disabled={signingOut}>
+          <Text style={styles.outlineText}>{signingOut ? "Saliendo…" : "Cerrar sesión"}</Text>
+        </Pressable>
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </ScrollView>
+
+      <AddExerciseModal
+        visible={pickerOpen}
+        catalog={catalog}
+        usedIds={new Set(entries.map((entry) => entry.exerciseId))}
+        onClose={() => setPickerOpen(false)}
+        onPick={(exerciseId) =>
+          run(async () => {
+            await addExerciseToDay(supabase, userId, date, exerciseId);
+            setPickerOpen(false);
+          })
+        }
+        onCreate={(name, muscleGroup) =>
+          run(async () => {
+            await createAndAddExercise(supabase, userId, date, name, muscleGroup);
+            setPickerOpen(false);
+          })
+        }
+      />
+    </View>
+  );
+}
+
+function ExerciseCard({
+  number,
+  entry,
+  onRun,
+}: {
+  number: number;
+  entry: WorkoutEntryView;
+  onRun: (action: () => Promise<void>) => Promise<void>;
+}) {
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>
+          <Text style={styles.muted}>{number} </Text>
+          {entry.exerciseName}
+        </Text>
+        <Pressable onPress={() => onRun(() => deleteEntry(supabase, entry.id))}>
+          <Text style={styles.muted}>Quitar</Text>
+        </Pressable>
+      </View>
+      <View style={styles.tableHead}>
+        <Text style={[styles.headCell, styles.colSet]}>Set</Text>
+        <Text style={styles.headCell}>kg</Text>
+        <Text style={styles.headCell}>Reps</Text>
+        <Text style={styles.headCell}>RIR</Text>
+        <Text style={[styles.headCell, styles.colKind]}>Tipo</Text>
+      </View>
+
+      {entry.sets.map((set) => (
+        <SetEditor
+          key={set.id}
+          entryId={entry.id}
+          sets={entry.sets}
+          set={set}
+          onRun={onRun}
+        />
+      ))}
+
+      <Pressable onPress={() => onRun(() => addSet(supabase, entry.id))}>
+        <Text style={styles.link}>+ Agregar set</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function SetEditor({
+  entryId,
+  sets,
+  set,
+  onRun,
+}: {
+  entryId: string;
+  sets: WorkoutEntryView["sets"];
+  set: WorkoutEntryView["sets"][number];
+  onRun: (action: () => Promise<void>) => Promise<void>;
+}) {
+  const [weight, setWeight] = useState(numberToInput(set.weightKg));
+  const [reps, setReps] = useState(numberToInput(set.reps));
+  const [rir, setRir] = useState(numberToInput(set.rir));
+
+  useEffect(() => {
+    setWeight(numberToInput(set.weightKg));
+    setReps(numberToInput(set.reps));
+    setRir(numberToInput(set.rir));
+  }, [set.id, set.weightKg, set.reps, set.rir]);
+
+  const special = isSpecialSetKind(set.setKind);
+  const isLastSubset =
+    special &&
+    set.subsetNumber ===
+      Math.max(...sets.filter((row) => row.setNumber === set.setNumber).map((row) => row.subsetNumber));
+
+  function save() {
+    void onRun(() =>
+      updateSetFields(supabase, set.id, {
+        weightKg: parseOptionalNumber(weight),
+        reps: parseOptionalInt(reps),
+        rir: parseOptionalRir(rir),
+      }),
+    );
+  }
+
+  return (
+    <View style={styles.setBox}>
+      <View style={styles.setRow}>
+        <Text style={[styles.setNumber, styles.colSet]}>{formatSetLabel(sets, set)}</Text>
+        <TextInput
+          value={weight}
+          onChangeText={setWeight}
+          onBlur={save}
+          keyboardType="decimal-pad"
+          placeholder="—"
+          placeholderTextColor={COLORS.muted}
+          style={styles.cellInput}
+        />
+        <TextInput
+          value={reps}
+          onChangeText={setReps}
+          onBlur={save}
+          keyboardType="number-pad"
+          placeholder="—"
+          placeholderTextColor={COLORS.muted}
+          style={styles.cellInput}
+        />
+        <TextInput
+          value={rir}
+          onChangeText={setRir}
+          onBlur={save}
+          keyboardType="decimal-pad"
+          placeholder="—"
+          placeholderTextColor={COLORS.muted}
+          style={styles.cellInput}
+        />
+        <Pressable
+          style={styles.colKind}
+          onPress={() => {
+            const next = SET_KINDS[(SET_KINDS.indexOf(set.setKind) + 1) % SET_KINDS.length];
+            void onRun(() => changeSetKind(supabase, entryId, set.setNumber, next));
+          }}
+        >
+          <Text style={styles.kindCurrent}>{SET_KIND_LABELS[set.setKind]}</Text>
+        </Pressable>
+        <Pressable onPress={() => onRun(() => deleteSetRow(supabase, set.id))}>
+          <Text style={styles.muted}>✕</Text>
+        </Pressable>
+      </View>
+      {isLastSubset ? (
+        <Pressable onPress={() => onRun(() => addSubset(supabase, entryId, set.setNumber))}>
+          <Text style={styles.link}>
+            + Sub set {set.setNumber}.{set.subsetNumber + 1}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function AddExerciseModal({
+  visible,
+  catalog,
+  usedIds,
+  onClose,
+  onPick,
+  onCreate,
+}: {
+  visible: boolean;
+  catalog: CatalogExercise[];
+  usedIds: Set<string>;
+  onClose: () => void;
+  onPick: (exerciseId: string) => void;
+  onCreate: (name: string, muscleGroup: MuscleGroup) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [name, setName] = useState("");
+  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>("pecho");
+
+  const grouped = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const pool = catalog.filter((item) => !usedIds.has(item.id));
+    const filtered = q ? pool.filter((item) => item.name.toLowerCase().includes(q)) : pool;
+    return groupByMuscle(filtered);
+  }, [catalog, query, usedIds]);
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={styles.modal}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.cardTitle}>Agregar ejercicio</Text>
+          <Pressable onPress={onClose}>
+            <Text style={styles.muted}>Cerrar</Text>
+          </Pressable>
+        </View>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Buscar…"
+          placeholderTextColor={COLORS.muted}
+          style={[styles.input, { marginHorizontal: 16, marginBottom: 8 }]}
+        />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}>
+          {grouped.map((group) => (
+            <View key={group.muscleGroup} style={{ marginBottom: 16 }}>
+              <Text style={styles.groupTitle}>{group.label}</Text>
+              {group.items.map((exercise) => (
+                <Pressable key={exercise.id} style={styles.pickRow} onPress={() => onPick(exercise.id)}>
+                  <Text style={styles.pickText}>{exercise.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ))}
+
+          <Text style={styles.groupTitle}>Nuevo ejercicio</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Nombre"
+            placeholderTextColor={COLORS.muted}
+            style={styles.input}
+          />
+          <ScrollView horizontal style={{ marginVertical: 8 }}>
+            {MUSCLE_GROUPS.map((group) => (
+              <Pressable
+                key={group}
+                style={[styles.kindChip, muscleGroup === group && styles.kindChipActive]}
+                onPress={() => setMuscleGroup(group)}
+              >
+                <Text style={[styles.kindText, muscleGroup === group && styles.kindTextActive]}>
+                  {MUSCLE_GROUP_LABELS[group]}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <Pressable style={styles.primary} onPress={() => onCreate(name, muscleGroup)}>
+            <Text style={styles.primaryText}>Crear</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: COLORS.panel },
+  content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 18 },
+  title: { fontSize: 17, fontWeight: "600", color: COLORS.ink, letterSpacing: -0.3 },
+  email: { color: COLORS.muted, fontSize: 13, textAlign: "center" },
+  dateRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  dateCenter: { alignItems: "center" },
+  dateBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dateBtnText: { fontSize: 22, color: COLORS.ink },
+  empty: { paddingVertical: 48, alignItems: "center" },
+  group: { gap: 16 },
+  groupTitle: { fontSize: 13, fontWeight: "500", color: COLORS.muted, marginBottom: 2 },
+  card: { gap: 0 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  cardTitle: { fontSize: 16, fontWeight: "600", color: COLORS.ink, flex: 1, paddingRight: 8, letterSpacing: -0.2 },
+  tableHead: { flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: COLORS.line, paddingBottom: 6 },
+  headCell: { flex: 1, fontSize: 11, fontWeight: "500", color: COLORS.muted, textAlign: "center" },
+  colSet: { width: 36, flex: 0, textAlign: "left" },
+  colKind: { width: 72, flex: 0, alignItems: "center" },
+  setBox: { borderBottomWidth: 1, borderBottomColor: COLORS.line },
+  setRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4, gap: 2 },
+  setNumber: { fontWeight: "500", color: COLORS.ink, fontSize: 15 },
+  cellInput: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 15,
+    color: COLORS.ink,
+    paddingVertical: 8,
+  },
+  kindCurrent: { fontSize: 12, color: COLORS.ink, textAlign: "center" },
+  input: {
+    backgroundColor: COLORS.sand,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: COLORS.ink,
+    fontSize: 15,
+  },
+  kindChip: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: COLORS.sand,
+    marginRight: 6,
+  },
+  kindChipActive: { backgroundColor: COLORS.sageDark },
+  kindText: { fontSize: 12, color: COLORS.ink },
+  kindTextActive: { color: "#fff", fontWeight: "600" },
+  link: { color: COLORS.sageDark, fontWeight: "600", textAlign: "center", paddingVertical: 10, fontSize: 14 },
+  muted: { color: COLORS.muted, fontSize: 13 },
+  primary: {
+    backgroundColor: COLORS.sageDark,
+    paddingVertical: 14,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  primaryText: { color: "#fff", fontWeight: "600", fontSize: 15 },
+  outline: { paddingVertical: 14, alignItems: "center" },
+  outlineText: { color: COLORS.muted, fontWeight: "500" },
+  error: { color: COLORS.danger, textAlign: "center" },
+  modal: { flex: 1, backgroundColor: COLORS.panel, paddingTop: 48 },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  pickRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+  },
+  pickText: { color: COLORS.ink, fontSize: 15 },
+});

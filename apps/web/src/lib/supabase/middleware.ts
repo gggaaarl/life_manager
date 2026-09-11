@@ -57,7 +57,26 @@ export async function updateSession(request: NextRequest) {
 
     if (user && path.startsWith("/login")) {
       const url = request.nextUrl.clone();
-      url.pathname = "/finance";
+      url.pathname = "/trainer";
+      return NextResponse.redirect(url);
+    }
+
+    const hiddenAppRoutes = [
+      "/finance",
+      "/player",
+      "/driver",
+      "/home",
+      "/nutrition",
+      "/developer",
+      "/game",
+    ];
+    if (
+      user &&
+      hiddenAppRoutes.some((route) => path === route || path.startsWith(`${route}/`))
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/trainer";
+      url.search = "";
       return NextResponse.redirect(url);
     }
 

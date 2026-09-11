@@ -18,6 +18,7 @@
     "db:stop": "npx supabase stop",
     "db:reset": "npx supabase db reset",
     "dev:mobile": "npm run start --prefix apps/mobile",
+    "dev:mobile:tunnel": "npm run start:tunnel --prefix apps/mobile",
     "import:inspect": "node scripts/inspect-excel.mjs",
     "import:sql": "node scripts/excel-to-sql.mjs"
   },

@@ -22,12 +22,20 @@
 
 ## Google OAuth en móvil
 
-En Supabase → Authentication → URL Configuration, agrega a **Redirect URLs**:
+Google Play Console **no** es el login. El OAuth vive en **Google Cloud + Supabase**.
+
+Expo Go vuelve a la app (`exp://` / `lifemanager://`), no a la web vieja de Vercel.
+
+En [URL Configuration](https://supabase.com/dashboard/project/edbgqpebcfpytyqwaaqd/auth/url-configuration) tiene que estar:
 
 ```text
-lifemanager://auth/callback
-exp://127.0.0.1:8081/--/auth/callback
+https://life-manager-tau.vercel.app/auth/callback
+http://localhost:3000/auth/callback
+lifemanager://**
+exp://**
 ```
+
+Si Site URL sigue en `http://localhost:3000` y el redirect de Expo no está permitido, el celular abre localhost y sale `ERR_CONNECTION_REFUSED`.
 
 El scheme de la app es `lifemanager` (ver `app.json`).
 

@@ -39,6 +39,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      exercises: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          muscle_group: Database["public"]["Enums"]["muscle_group"]
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          muscle_group: Database["public"]["Enums"]["muscle_group"]
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          muscle_group?: Database["public"]["Enums"]["muscle_group"]
+          name?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_item_aliases: {
         Row: {
           alias: string
@@ -747,6 +782,121 @@ export type Database = {
           },
         ]
       }
+      workout_entries: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          session_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          session_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          session_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_entries_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          session_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_sets: {
+        Row: {
+          created_at: string
+          entry_id: string
+          id: string
+          reps: number | null
+          rir: number | null
+          set_kind: Database["public"]["Enums"]["set_kind"]
+          set_number: number
+          subset_number: number
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          id?: string
+          reps?: number | null
+          rir?: number | null
+          set_kind?: Database["public"]["Enums"]["set_kind"]
+          set_number: number
+          subset_number?: number
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          id?: string
+          reps?: number | null
+          rir?: number | null
+          set_kind?: Database["public"]["Enums"]["set_kind"]
+          set_number?: number
+          subset_number?: number
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "workout_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -781,6 +931,20 @@ export type Database = {
         | "driver_income"
         | "driver_expense"
         | "opening_balance"
+      muscle_group:
+        | "pecho"
+        | "espalda"
+        | "hombros"
+        | "biceps"
+        | "triceps"
+        | "cuadriceps"
+        | "isquiotibiales"
+        | "gluteos"
+        | "pantorrillas"
+        | "core"
+        | "antebrazos"
+        | "cardio"
+        | "otro"
       payment_method: "yape" | "plin" | "efectivo" | "otro"
       player_belleza: "regular" | "modelo"
       player_bottom: "regular" | "mega"
@@ -791,6 +955,7 @@ export type Database = {
       player_talla: "caballo" | "mediana" | "chata"
       player_top: "regular" | "mega"
       profile_role: "admin" | "user"
+      set_kind: "regular" | "myorep" | "drop_set" | "cluster"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -949,6 +1114,21 @@ export const Constants = {
         "driver_expense",
         "opening_balance",
       ],
+      muscle_group: [
+        "pecho",
+        "espalda",
+        "hombros",
+        "biceps",
+        "triceps",
+        "cuadriceps",
+        "isquiotibiales",
+        "gluteos",
+        "pantorrillas",
+        "core",
+        "antebrazos",
+        "cardio",
+        "otro",
+      ],
       payment_method: ["yape", "plin", "efectivo", "otro"],
       player_belleza: ["regular", "modelo"],
       player_bottom: ["regular", "mega"],
@@ -959,6 +1139,7 @@ export const Constants = {
       player_talla: ["caballo", "mediana", "chata"],
       player_top: ["regular", "mega"],
       profile_role: ["admin", "user"],
+      set_kind: ["regular", "myorep", "drop_set", "cluster"],
     },
   },
 } as const

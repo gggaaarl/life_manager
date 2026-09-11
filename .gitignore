@@ -17,3 +17,6 @@ supabase/.temp
 import/*.xlsx
 import/*.xls
 import/*.csv
+
+.vercel
+.env*

@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: Props) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 70% 50% at 15% 0%, rgba(163,177,138,0.12), transparent 55%), radial-gradient(ellipse 50% 40% at 90% 100%, rgba(125,145,104,0.08), transparent 50%)",
+            "radial-gradient(ellipse 70% 50% at 15% 0%, rgba(91,77,255,0.08), transparent 55%), radial-gradient(ellipse 50% 40% at 90% 100%, rgba(109,94,245,0.06), transparent 50%)",
         }}
       />
 
@@ -39,7 +39,7 @@ export default async function LoginPage({ searchParams }: Props) {
 function BrandMark() {
   return (
     <div className="max-w-md">
-      <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.25rem,8vw,3.75rem)] font-bold leading-[0.95] tracking-tight text-ink">
+      <h1 className="text-[clamp(2rem,7vw,3.25rem)] font-semibold leading-[1.05] tracking-tight text-ink">
         NATURALEZA
         <span className="block text-teal">CRUEL</span>
       </h1>

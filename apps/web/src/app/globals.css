@@ -2,21 +2,22 @@
 
 :root {
   --lm-void: #ffffff;
-  --lm-ink: #1a2419;
+  --lm-ink: #111118;
   --lm-forest: #3d4f35;
-  --lm-teal: #7d9168;
-  --lm-mint: #6b7f59;
-  --lm-sand: #f7f8f6;
+  --lm-teal: #5b4dff;
+  --lm-mint: #6d5ef5;
+  --lm-sand: #f7f7f8;
   --lm-panel: #ffffff;
-  --lm-panel-hover: #f0f2ee;
-  --lm-muted: #6b7566;
-  --lm-line: #e2e6df;
-  --lm-danger: #b42318;
+  --lm-panel-hover: #f3f3f5;
+  --lm-muted: #8b8d93;
+  --lm-line: #ececee;
+  --lm-danger: #e11d48;
 }
 
 @theme inline {
-  --font-display: var(--font-syne);
-  --font-body: var(--font-dm-sans);
+  --font-display: var(--font-inter);
+  --font-body: var(--font-inter);
+  --font-sans: var(--font-inter);
   --color-ink: var(--lm-ink);
   --color-forest: var(--lm-forest);
   --color-teal: var(--lm-teal);
@@ -42,7 +43,9 @@ body {
   margin: 0;
   color: var(--lm-ink);
   background: var(--lm-sand);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -53,4 +56,11 @@ input,
 select,
 textarea {
   color-scheme: light;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  font: inherit;
+  letter-spacing: inherit;
 }
