@@ -42,8 +42,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
-          muscle_group: Database["public"]["Enums"]["muscle_group"]
-          muscle_groups: Database["public"]["Enums"]["muscle_group"][]
+          muscle_group_ids: number[]
           name: string
           user_id: string | null
         }
@@ -51,8 +50,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          muscle_group: Database["public"]["Enums"]["muscle_group"]
-          muscle_groups?: Database["public"]["Enums"]["muscle_group"][]
+          muscle_group_ids?: number[]
           name: string
           user_id?: string | null
         }
@@ -60,8 +58,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          muscle_group?: Database["public"]["Enums"]["muscle_group"]
-          muscle_groups?: Database["public"]["Enums"]["muscle_group"][]
+          muscle_group_ids?: number[]
           name?: string
           user_id?: string | null
         }
@@ -74,6 +71,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      muscle_groups: {
+        Row: {
+          code: string
+          id: number
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          id: number
+          label: string
+          sort_order: number
+        }
+        Update: {
+          code?: string
+          id?: number
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -146,6 +164,7 @@ export type Database = {
           created_at: string
           id: string
           session_date: string
+          session_number: number
           updated_at: string
           user_id: string
         }
@@ -153,6 +172,7 @@ export type Database = {
           created_at?: string
           id?: string
           session_date: string
+          session_number?: number
           updated_at?: string
           user_id: string
         }
@@ -160,6 +180,7 @@ export type Database = {
           created_at?: string
           id?: string
           session_date?: string
+          session_number?: number
           updated_at?: string
           user_id?: string
         }

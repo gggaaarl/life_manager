@@ -2,11 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server";
 import {
-  addExerciseToDay,
+  addExerciseToSession,
   addSet,
   addSubset,
   changeSetKind,
   createAndAddExercise,
+  createWorkoutSession,
   deleteEntry,
   deleteSetRow,
   updateSetFields,
@@ -34,20 +35,29 @@ function trainerPath(date: string) {
 export async function addExerciseAction(formData: FormData) {
   const { supabase, user } = await requireUser();
   const date = String(formData.get("date") ?? "");
+  const sessionId = String(formData.get("sessionId") ?? "");
   const exerciseId = String(formData.get("exerciseId") ?? "");
-  await addExerciseToDay(supabase, user.id, date, exerciseId);
+  await addExerciseToSession(supabase, sessionId, exerciseId);
   revalidatePath(trainerPath(date));
 }
 
 export async function createExerciseAction(formData: FormData) {
   const { supabase, user } = await requireUser();
   const date = String(formData.get("date") ?? "");
+  const sessionId = String(formData.get("sessionId") ?? "");
   const name = String(formData.get("name") ?? "");
   const muscle = String(formData.get("muscleGroup") ?? "");
   if (!isMuscleGroup(muscle)) {
     throw new Error("Parte muscular inválida.");
   }
-  await createAndAddExercise(supabase, user.id, date, name, muscle);
+  await createAndAddExercise(supabase, user.id, sessionId, name, muscle);
+  revalidatePath(trainerPath(date));
+}
+
+export async function createSessionAction(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const date = String(formData.get("date") ?? "");
+  await createWorkoutSession(supabase, user.id, date);
   revalidatePath(trainerPath(date));
 }
 

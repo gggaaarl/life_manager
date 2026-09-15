@@ -1,4 +1,13 @@
-import { isMuscleGroup, isSpecialSetKind, type MuscleGroup, type SetKind } from "./constants";
+import {
+  DEFAULT_MUSCLE_GROUP,
+  isMuscleGroup,
+  isSpecialSetKind,
+  MUSCLE_GROUP_IDS,
+  MUSCLE_GROUPS,
+  muscleGroupIds,
+  type MuscleGroup,
+  type SetKind,
+} from "./constants";
 import {
   moveEntryToPosition,
   nextSetNumber,
@@ -6,7 +15,9 @@ import {
   setNumbersAfterDeletingSet,
   sortSets,
   type CatalogExercise,
+  type WorkoutDayView,
   type WorkoutEntryView,
+  type WorkoutSessionView,
   type WorkoutSetView,
 } from "./logic";
 
@@ -14,6 +25,7 @@ type QueryResult<T = unknown> = Promise<{ data: T; error: { message: string } | 
 
 type FilterBuilder = QueryResult & {
   eq: (column: string, value: string | number | boolean) => FilterBuilder;
+  in: (column: string, values: string[]) => FilterBuilder;
   order: (column: string, options?: { ascending?: boolean }) => FilterBuilder;
   limit: (count: number) => FilterBuilder;
   maybeSingle: () => QueryResult<Record<string, unknown> | null>;
@@ -42,13 +54,18 @@ function fail(error: { message: string } | null, fallback: string): never {
 }
 
 function asMuscleGroup(value: unknown): MuscleGroup {
-  return isMuscleGroup(String(value)) ? (value as MuscleGroup) : "otro";
+  return isMuscleGroup(String(value)) ? (value as MuscleGroup) : DEFAULT_MUSCLE_GROUP;
 }
 
-function asMuscleGroups(raw: unknown, fallback: unknown): MuscleGroup[] {
-  const listed = Array.isArray(raw) ? raw.map(asMuscleGroup) : [];
-  const unique = [...new Set(listed.length > 0 ? listed : [asMuscleGroup(fallback)])];
-  return unique.length > 0 ? unique : ["otro"];
+function parseMuscleGroupsFromExercise(exerciseRow: Record<string, unknown>): MuscleGroup[] {
+  const raw = exerciseRow.muscle_group_ids;
+  const ids = new Set(
+    (Array.isArray(raw) ? raw : [])
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value)),
+  );
+  const ordered = MUSCLE_GROUPS.filter((group) => ids.has(MUSCLE_GROUP_IDS[group]));
+  return ordered.length > 0 ? ordered : [DEFAULT_MUSCLE_GROUP];
 }
 
 function asSetKind(value: unknown): SetKind {
@@ -73,21 +90,48 @@ function mapSet(row: Record<string, unknown>): WorkoutSetView {
   };
 }
 
+function mapEntryRow(row: Record<string, unknown>): WorkoutEntryView {
+  const exercise = Array.isArray(row.exercises) ? row.exercises[0] : row.exercises;
+  const exerciseRow = (exercise ?? {}) as Record<string, unknown>;
+  const sets = ((row.workout_sets as Record<string, unknown>[] | null) ?? []).map(mapSet);
+  const muscleGroups = parseMuscleGroupsFromExercise(exerciseRow);
+  return {
+    id: String(row.id),
+    sortOrder: Number(row.sort_order),
+    exerciseId: String(row.exercise_id),
+    exerciseName: String(exerciseRow.name ?? "Ejercicio"),
+    muscleGroup: muscleGroups[0] ?? DEFAULT_MUSCLE_GROUP,
+    muscleGroups,
+    sets: sortSets(sets),
+  };
+}
+
+async function loadSessionEntries(supabase: unknown, sessionId: string): Promise<WorkoutEntryView[]> {
+  const { data, error } = await db(supabase)
+    .from("workout_entries")
+    .select("id, sort_order, exercise_id, exercises(name, muscle_group_ids), workout_sets(*)")
+    .eq("session_id", sessionId)
+    .order("sort_order", { ascending: true });
+
+  if (error) fail(error, "No se pudieron cargar los ejercicios.");
+  return ((data as Record<string, unknown>[] | null) ?? []).map(mapEntryRow);
+}
+
 export async function listCatalogExercises(supabase: unknown): Promise<CatalogExercise[]> {
   const { data, error } = await db(supabase)
     .from("exercises")
-    .select("id, name, muscle_group, muscle_groups")
+    .select("id, name, muscle_group_ids")
     .eq("is_active", true)
     .order("name", { ascending: true });
 
   if (error) fail(error, "No se pudo cargar el catálogo.");
 
   return ((data as Record<string, unknown>[] | null) ?? []).map((row) => {
-    const muscleGroups = asMuscleGroups(row.muscle_groups, row.muscle_group);
+    const muscleGroups = parseMuscleGroupsFromExercise(row);
     return {
       id: String(row.id),
       name: String(row.name),
-      muscleGroup: muscleGroups[0] ?? asMuscleGroup(row.muscle_group),
+      muscleGroup: muscleGroups[0] ?? DEFAULT_MUSCLE_GROUP,
       muscleGroups,
     };
   });
@@ -97,40 +141,27 @@ export async function loadWorkoutDay(
   supabase: unknown,
   userId: string,
   sessionDate: string,
-): Promise<WorkoutEntryView[]> {
-  const { data: session, error: sessionError } = await db(supabase)
+): Promise<WorkoutDayView> {
+  const { data: sessionRows, error: sessionError } = await db(supabase)
     .from("workout_sessions")
-    .select("id")
+    .select("id, session_number")
     .eq("user_id", userId)
     .eq("session_date", sessionDate)
-    .maybeSingle();
+    .order("session_number", { ascending: true });
 
   if (sessionError) fail(sessionError, "No se pudo cargar el día.");
-  if (!session?.id) return [];
 
-  const { data, error } = await db(supabase)
-    .from("workout_entries")
-    .select("id, sort_order, exercise_id, exercises(name, muscle_group, muscle_groups), workout_sets(*)")
-    .eq("session_id", String(session.id))
-    .order("sort_order", { ascending: true });
+  const sessions: WorkoutSessionView[] = [];
+  for (const row of (sessionRows as Record<string, unknown>[] | null) ?? []) {
+    const sessionId = String(row.id);
+    sessions.push({
+      id: sessionId,
+      sessionNumber: Number(row.session_number),
+      entries: await loadSessionEntries(supabase, sessionId),
+    });
+  }
 
-  if (error) fail(error, "No se pudieron cargar los ejercicios.");
-
-  return ((data as Record<string, unknown>[] | null) ?? []).map((row) => {
-    const exercise = Array.isArray(row.exercises) ? row.exercises[0] : row.exercises;
-    const exerciseRow = (exercise ?? {}) as Record<string, unknown>;
-    const sets = ((row.workout_sets as Record<string, unknown>[] | null) ?? []).map(mapSet);
-    const muscleGroups = asMuscleGroups(exerciseRow.muscle_groups, exerciseRow.muscle_group ?? "otro");
-    return {
-      id: String(row.id),
-      sortOrder: Number(row.sort_order),
-      exerciseId: String(row.exercise_id),
-      exerciseName: String(exerciseRow.name ?? "Ejercicio"),
-      muscleGroup: muscleGroups[0] ?? "otro",
-      muscleGroups,
-      sets: sortSets(sets),
-    };
-  });
+  return { date: sessionDate, sessions };
 }
 
 async function ensureProfile(supabase: unknown, userId: string): Promise<void> {
@@ -147,30 +178,33 @@ async function ensureProfile(supabase: unknown, userId: string): Promise<void> {
   if (created.error) fail(created.error, "No se pudo crear el perfil.");
 }
 
-async function findSessionId(
+async function nextSessionNumber(
   supabase: unknown,
   userId: string,
   sessionDate: string,
-): Promise<string | null> {
-  const existing = await db(supabase)
+): Promise<number> {
+  const { data, error } = await db(supabase)
     .from("workout_sessions")
-    .select("id")
+    .select("session_number")
     .eq("user_id", userId)
     .eq("session_date", sessionDate)
+    .order("session_number", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (existing.error) fail(existing.error, "No se pudo abrir la sesión.");
-  return existing.data?.id ? String(existing.data.id) : null;
+  if (error) fail(error, "No se pudo leer las sesiones.");
+  return data?.session_number == null ? 1 : Number(data.session_number) + 1;
 }
 
 async function insertSession(
   supabase: unknown,
   userId: string,
   sessionDate: string,
+  sessionNumber: number,
 ): Promise<{ id: string | null; error: { message: string } | null }> {
   const created = await db(supabase)
     .from("workout_sessions")
-    .insert({ user_id: userId, session_date: sessionDate })
+    .insert({ user_id: userId, session_date: sessionDate, session_number: sessionNumber })
     .select("id")
     .single();
   return {
@@ -179,26 +213,34 @@ async function insertSession(
   };
 }
 
-async function ensureSession(
+export async function createWorkoutSession(
   supabase: unknown,
   userId: string,
   sessionDate: string,
 ): Promise<string> {
-  const existingId = await findSessionId(supabase, userId, sessionDate);
-  if (existingId) return existingId;
+  const sessionNumber = await nextSessionNumber(supabase, userId, sessionDate);
+  const created = await insertSession(supabase, userId, sessionDate, sessionNumber);
 
-  const created = await insertSession(supabase, userId, sessionDate);
   if (created.id) return created.id;
 
   const message = created.error?.message ?? "";
   if (/foreign key|profiles/i.test(message)) {
     await ensureProfile(supabase, userId);
-    const retried = await insertSession(supabase, userId, sessionDate);
+    const retried = await insertSession(supabase, userId, sessionDate, sessionNumber);
     if (retried.id) return retried.id;
   }
 
-  const raced = await findSessionId(supabase, userId, sessionDate);
-  if (raced) return raced;
+  if (/duplicate|unique/i.test(message)) {
+    const raced = await db(supabase)
+      .from("workout_sessions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("session_date", sessionDate)
+      .eq("session_number", sessionNumber)
+      .maybeSingle();
+    if (raced.data?.id) return String(raced.data.id);
+  }
+
   fail(created.error, "No se pudo crear la sesión.");
 }
 
@@ -213,14 +255,11 @@ async function loadEntrySets(supabase: unknown, entryId: string): Promise<Workou
   return sortSets(((data as Record<string, unknown>[] | null) ?? []).map(mapSet));
 }
 
-export async function addExerciseToDay(
+export async function addExerciseToSession(
   supabase: unknown,
-  userId: string,
-  sessionDate: string,
+  sessionId: string,
   exerciseId: string,
 ): Promise<void> {
-  const sessionId = await ensureSession(supabase, userId, sessionDate);
-
   const last = await db(supabase)
     .from("workout_entries")
     .select("sort_order")
@@ -229,7 +268,7 @@ export async function addExerciseToDay(
     .limit(1)
     .maybeSingle();
 
-  if (last.error) fail(last.error, "No se pudo leer el día.");
+  if (last.error) fail(last.error, "No se pudo leer la sesión.");
 
   const sortOrder = last.data?.sort_order == null ? 1 : Number(last.data.sort_order) + 1;
   const created = await db(supabase)
@@ -258,10 +297,23 @@ export async function addExerciseToDay(
   if (firstSet.error) fail(firstSet.error, "No se pudo crear el set.");
 }
 
-export async function createAndAddExercise(
+/** @deprecated Usar addExerciseToSession con sessionId explícito. */
+export async function addExerciseToDay(
   supabase: unknown,
   userId: string,
   sessionDate: string,
+  exerciseId: string,
+): Promise<void> {
+  const day = await loadWorkoutDay(supabase, userId, sessionDate);
+  const sessionId =
+    day.sessions[0]?.id ?? (await createWorkoutSession(supabase, userId, sessionDate));
+  await addExerciseToSession(supabase, sessionId, exerciseId);
+}
+
+export async function createAndAddExercise(
+  supabase: unknown,
+  userId: string,
+  sessionId: string,
   name: string,
   muscleGroupsInput: MuscleGroup[] | MuscleGroup,
 ): Promise<void> {
@@ -269,18 +321,19 @@ export async function createAndAddExercise(
   if (!trimmed) {
     throw new Error("Escribe el nombre del ejercicio.");
   }
-  const muscleGroups = asMuscleGroups(
-    Array.isArray(muscleGroupsInput) ? muscleGroupsInput : [muscleGroupsInput],
-    "otro",
-  );
+  const muscleGroups = [
+    ...new Set(
+      (Array.isArray(muscleGroupsInput) ? muscleGroupsInput : [muscleGroupsInput]).map(asMuscleGroup),
+    ),
+  ];
+  if (muscleGroups.length === 0) muscleGroups.push(DEFAULT_MUSCLE_GROUP);
 
   const created = await db(supabase)
     .from("exercises")
     .insert({
       user_id: userId,
       name: trimmed,
-      muscle_group: muscleGroups[0],
-      muscle_groups: muscleGroups,
+      muscle_group_ids: muscleGroupIds(muscleGroups),
     })
     .select("id")
     .single();
@@ -289,7 +342,7 @@ export async function createAndAddExercise(
     fail(created.error, "No se pudo crear el ejercicio.");
   }
 
-  await addExerciseToDay(supabase, userId, sessionDate, String(created.data.id));
+  await addExerciseToSession(supabase, sessionId, String(created.data.id));
 }
 
 export async function addSet(supabase: unknown, entryId: string): Promise<void> {
@@ -458,8 +511,8 @@ export async function reorderDayEntry(
     sortOrder: Number(row.sort_order),
     exerciseId: "",
     exerciseName: "",
-    muscleGroup: "otro" as const,
-    muscleGroups: ["otro" as const],
+    muscleGroup: DEFAULT_MUSCLE_GROUP,
+    muscleGroups: [DEFAULT_MUSCLE_GROUP],
     sets: [],
   }));
   const next = moveEntryToPosition(asEntries, entryId, position);

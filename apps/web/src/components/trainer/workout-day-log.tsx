@@ -3,11 +3,12 @@
 import { useMemo, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  addExerciseToDay,
+  addExerciseToSession,
   addSet,
   addSubset,
   changeSetKind,
   createAndAddExercise,
+  createWorkoutSession,
   deleteEntry,
   deleteSetRow,
   updateSetFields,
@@ -23,6 +24,8 @@ import {
   type MuscleGroup,
 } from "@life-manager/shared/workout/constants";
 import {
+  daySetSummary,
+  defaultSessionLabel,
   exerciseMuscles,
   formatSetLabel,
   groupByMuscle,
@@ -33,14 +36,16 @@ import {
   parseOptionalNumber,
   parseOptionalRir,
   type CatalogExercise,
+  type WorkoutDayView,
   type WorkoutEntryView,
+  type WorkoutSessionView,
 } from "@life-manager/shared/workout/logic";
 
 type Props = {
   date: string;
   userId: string;
   catalog: CatalogExercise[];
-  entries: WorkoutEntryView[];
+  day: WorkoutDayView;
   onRefreshDay: () => Promise<unknown>;
   onRefreshCatalog: () => Promise<unknown>;
   onSetFieldsChange: (
@@ -76,75 +81,155 @@ function MuscleBadges({
   );
 }
 
+function SummaryBlock({
+  title,
+  summary,
+}: {
+  title: string;
+  summary: ReturnType<typeof sessionSetSummary>;
+}) {
+  return (
+    <div>
+      <p className="text-[15px] font-semibold text-ink">
+        {title}: {summary.total}
+      </p>
+      {summary.byMuscle.length > 0 ? (
+        <p className="mt-1 text-[13px] text-muted">
+          {summary.byMuscle.map((group) => `${group.label} ${group.sets}`).join(" · ")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function WorkoutDayLog({
   date,
   userId,
   catalog,
-  entries,
+  day,
   onRefreshDay,
   onRefreshCatalog,
   onSetFieldsChange,
   onReorderEntry,
 }: Props) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const listed = orderedEntries(entries);
-  const setSummary = sessionSetSummary(entries);
+  const [, startTransition] = useTransition();
+  const supabase = useMemo(() => createClient(), []);
+  const [pickerSessionId, setPickerSessionId] = useState<string | null>(null);
+  const daySummary = daySetSummary(day);
+  const hasSessions = day.sessions.length > 0;
 
   return (
     <div className="pb-24">
-      {entries.length === 0 ? (
-        <p className="py-16 text-center text-[15px] text-muted">
-          Todavía no hay ejercicios en este día.
-        </p>
-      ) : (
-        <div className="space-y-8">
-          <div>
-            <p className="text-[15px] font-semibold text-ink">
-              Volumen sistemático del día: {setSummary.total}
-            </p>
-            <p className="mt-1 text-[13px] text-muted">
-              {setSummary.byMuscle
-                .map((group) => `${group.label} ${group.sets}`)
-                .join(" · ")}
-            </p>
-          </div>
-          <div className="space-y-7">
-            {listed.map((entry, index) => (
-              <ExerciseBlock
-                key={entry.id}
-                entry={entry}
-                number={index + 1}
-                onRefreshDay={onRefreshDay}
-                onSetFieldsChange={onSetFieldsChange}
-                onReorderEntry={onReorderEntry}
-              />
-            ))}
-          </div>
+      {hasSessions ? (
+        <div className="mb-8">
+          <SummaryBlock title="Volumen sistemático del día" summary={daySummary} />
         </div>
+      ) : (
+        <p className="py-8 text-center text-[15px] text-muted">
+          Todavía no hay sesiones en este día.
+        </p>
       )}
+
+      <div className="space-y-10">
+        {day.sessions.map((session) => (
+          <WorkoutSessionBlock
+            key={session.id}
+            session={session}
+            onRefreshDay={onRefreshDay}
+            onSetFieldsChange={onSetFieldsChange}
+            onReorderEntry={onReorderEntry}
+            onAddExercise={() => setPickerSessionId(session.id)}
+          />
+        ))}
+      </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 py-3 backdrop-blur sm:static sm:mt-8 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         <button
           type="button"
-          onClick={() => setPickerOpen(true)}
-          className="mx-auto block w-full max-w-md rounded-full bg-teal py-3.5 text-[15px] font-semibold text-white sm:w-auto sm:px-8"
+          onClick={() => {
+            startTransition(async () => {
+              await createWorkoutSession(supabase, userId, date);
+              await onRefreshDay();
+            });
+          }}
+          className="mx-auto block w-full max-w-md rounded-full border border-line py-3.5 text-[15px] font-semibold text-ink sm:w-auto sm:px-8"
         >
-          Agregar ejercicio
+          + Agregar sesión
         </button>
       </div>
 
-      {pickerOpen ? (
+      {pickerSessionId ? (
         <AddExercisePicker
-          date={date}
           userId={userId}
+          sessionId={pickerSessionId}
           catalog={catalog}
-          usedIds={new Set(entries.map((entry) => entry.exerciseId))}
-          onClose={() => setPickerOpen(false)}
+          usedIds={
+            new Set(
+              day.sessions
+                .find((session) => session.id === pickerSessionId)
+                ?.entries.map((entry) => entry.exerciseId) ?? [],
+            )
+          }
+          onClose={() => setPickerSessionId(null)}
           onRefreshDay={onRefreshDay}
           onRefreshCatalog={onRefreshCatalog}
         />
       ) : null}
     </div>
+  );
+}
+
+function WorkoutSessionBlock({
+  session,
+  onRefreshDay,
+  onSetFieldsChange,
+  onReorderEntry,
+  onAddExercise,
+}: {
+  session: WorkoutSessionView;
+  onRefreshDay: () => Promise<unknown>;
+  onSetFieldsChange: Props["onSetFieldsChange"];
+  onReorderEntry: Props["onReorderEntry"];
+  onAddExercise: () => void;
+}) {
+  const listed = orderedEntries(session.entries);
+  const sessionSummary = sessionSetSummary(session.entries);
+
+  return (
+    <section className="rounded-2xl border border-line p-4 sm:p-5">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[16px] font-semibold tracking-tight text-ink">
+            {defaultSessionLabel(session.sessionNumber)}
+          </h2>
+          <SummaryBlock title="Volumen de la sesión" summary={sessionSummary} />
+        </div>
+        <button
+          type="button"
+          onClick={onAddExercise}
+          className="rounded-full bg-teal px-4 py-2 text-[14px] font-semibold text-white"
+        >
+          Agregar ejercicio
+        </button>
+      </div>
+
+      {listed.length === 0 ? (
+        <p className="py-6 text-center text-[14px] text-muted">Sin ejercicios en esta sesión.</p>
+      ) : (
+        <div className="space-y-7">
+          {listed.map((entry, index) => (
+            <ExerciseBlock
+              key={entry.id}
+              entry={entry}
+              number={index + 1}
+              onRefreshDay={onRefreshDay}
+              onSetFieldsChange={onSetFieldsChange}
+              onReorderEntry={onReorderEntry}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -379,16 +464,16 @@ function SetRow({
 }
 
 function AddExercisePicker({
-  date,
   userId,
+  sessionId,
   catalog,
   usedIds,
   onClose,
   onRefreshDay,
   onRefreshCatalog,
 }: {
-  date: string;
   userId: string;
+  sessionId: string;
   catalog: CatalogExercise[];
   usedIds: Set<string>;
   onClose: () => void;
@@ -440,7 +525,7 @@ function AddExercisePicker({
                   className="w-full border-b border-line py-3 text-left text-[15px] text-ink"
                   onClick={() => {
                     startTransition(async () => {
-                      await addExerciseToDay(supabase, userId, date, exercise.id);
+                      await addExerciseToSession(supabase, sessionId, exercise.id);
                       await onRefreshDay();
                       onClose();
                     });
@@ -459,7 +544,7 @@ function AddExercisePicker({
           onSubmit={(event) => {
             event.preventDefault();
             startTransition(async () => {
-              await createAndAddExercise(supabase, userId, date, name, muscleGroups);
+              await createAndAddExercise(supabase, userId, sessionId, name, muscleGroups);
               await Promise.all([onRefreshDay(), onRefreshCatalog()]);
               onClose();
             });

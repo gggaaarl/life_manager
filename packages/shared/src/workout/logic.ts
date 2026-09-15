@@ -26,6 +26,17 @@ export type WorkoutEntryView = {
   sets: WorkoutSetView[];
 };
 
+export type WorkoutSessionView = {
+  id: string;
+  sessionNumber: number;
+  entries: WorkoutEntryView[];
+};
+
+export type WorkoutDayView = {
+  date: string;
+  sessions: WorkoutSessionView[];
+};
+
 export type CatalogExercise = {
   id: string;
   name: string;
@@ -142,6 +153,46 @@ export function applySetFields(
     ...entry,
     sets: entry.sets.map((set) => (set.id === setId ? { ...set, ...fields } : set)),
   }));
+}
+
+export function applySetFieldsToDay(
+  day: WorkoutDayView,
+  setId: string,
+  fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+): WorkoutDayView {
+  return {
+    ...day,
+    sessions: day.sessions.map((session) => ({
+      ...session,
+      entries: applySetFields(session.entries, setId, fields),
+    })),
+  };
+}
+
+export function moveEntryInDay(
+  day: WorkoutDayView,
+  entryId: string,
+  position: number,
+): WorkoutDayView {
+  return {
+    ...day,
+    sessions: day.sessions.map((session) => ({
+      ...session,
+      entries: moveEntryToPosition(session.entries, entryId, position),
+    })),
+  };
+}
+
+export function defaultSessionLabel(sessionNumber: number): string {
+  return `Sesión ${sessionNumber}`;
+}
+
+export function daySetSummary(day: WorkoutDayView): {
+  total: number;
+  byMuscle: Array<{ muscleGroup: MuscleGroup; label: string; sets: number }>;
+} {
+  const allEntries = day.sessions.flatMap((session) => session.entries);
+  return sessionSetSummary(allEntries);
 }
 
 export function sessionSetSummary(entries: WorkoutEntryView[]): {

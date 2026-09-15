@@ -7,29 +7,29 @@ import { createClient } from "@/lib/supabase/client";
 import { listCatalogExercises, loadWorkoutDay, reorderDayEntry } from "@life-manager/shared/workout/api";
 import { todayInLima } from "@life-manager/shared/workout/constants";
 import {
-  applySetFields,
-  moveEntryToPosition,
+  applySetFieldsToDay,
+  moveEntryInDay,
   type CatalogExercise,
-  type WorkoutEntryView,
+  type WorkoutDayView,
 } from "@life-manager/shared/workout/logic";
 
 type Props = {
   userId: string;
   initialDate: string;
   initialCatalog: CatalogExercise[];
-  initialEntries: WorkoutEntryView[];
+  initialDay: WorkoutDayView;
 };
 
 export function WorkoutTrainer({
   userId,
   initialDate,
   initialCatalog,
-  initialEntries,
+  initialDay,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [date, setDate] = useState(initialDate);
   const [catalog, setCatalog] = useState(initialCatalog);
-  const [entries, setEntries] = useState(initialEntries);
+  const [day, setDay] = useState(initialDay);
   const [loadingDay, setLoadingDay] = useState(false);
   const skipFirstLoad = useRef(true);
 
@@ -51,7 +51,7 @@ export function WorkoutTrainer({
     setLoadingDay(true);
     loadWorkoutDay(supabase, userId, date)
       .then((next) => {
-        if (!cancelled) setEntries(next);
+        if (!cancelled) setDay(next);
       })
       .finally(() => {
         if (!cancelled) setLoadingDay(false);
@@ -63,7 +63,7 @@ export function WorkoutTrainer({
 
   async function refreshDay() {
     const next = await loadWorkoutDay(supabase, userId, date);
-    setEntries(next);
+    setDay(next);
     return next;
   }
 
@@ -77,11 +77,11 @@ export function WorkoutTrainer({
     setId: string,
     fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
   ) {
-    setEntries((current) => applySetFields(current, setId, fields));
+    setDay((current) => applySetFieldsToDay(current, setId, fields));
   }
 
   async function onReorderEntry(entryId: string, position: number) {
-    setEntries((current) => moveEntryToPosition(current, entryId, position));
+    setDay((current) => moveEntryInDay(current, entryId, position));
     await reorderDayEntry(supabase, entryId, position);
     await refreshDay();
   }
@@ -97,7 +97,7 @@ export function WorkoutTrainer({
             date={date}
             userId={userId}
             catalog={catalog}
-            entries={entries}
+            day={day}
             onRefreshDay={refreshDay}
             onRefreshCatalog={refreshCatalog}
             onSetFieldsChange={onSetFieldsChange}

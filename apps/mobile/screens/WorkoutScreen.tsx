@@ -10,11 +10,12 @@ import {
   View,
 } from "react-native";
 import {
-  addExerciseToDay,
+  addExerciseToSession,
   addSet,
   addSubset,
   changeSetKind,
   createAndAddExercise,
+  createWorkoutSession,
   deleteEntry,
   deleteSetRow,
   listCatalogExercises,
@@ -34,11 +35,13 @@ import {
   type MuscleGroup,
 } from "@life-manager/shared/workout/constants";
 import {
-  applySetFields,
+  applySetFieldsToDay,
+  daySetSummary,
+  defaultSessionLabel,
   exerciseMuscles,
   formatSetLabel,
   groupByMuscle,
-  moveEntryToPosition,
+  moveEntryInDay,
   numberToInput,
   orderedEntries,
   sessionSetSummary,
@@ -46,7 +49,9 @@ import {
   parseOptionalNumber,
   parseOptionalRir,
   type CatalogExercise,
+  type WorkoutDayView,
   type WorkoutEntryView,
+  type WorkoutSessionView,
 } from "@life-manager/shared/workout/logic";
 import type { AccountProfile } from "@life-manager/shared/auth/account";
 import { AppSidebar } from "../components/AppSidebar";
@@ -82,15 +87,15 @@ type Props = {
 export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props) {
   const [date, setDate] = useState(todayInLima);
   const [catalog, setCatalog] = useState<CatalogExercise[]>([]);
-  const [entries, setEntries] = useState<WorkoutEntryView[]>([]);
+  const [day, setDay] = useState<WorkoutDayView>({ date: todayInLima(), sessions: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSessionId, setPickerSessionId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const reloadDay = useCallback(async () => {
-    const nextEntries = await loadWorkoutDay(supabase, userId, date);
-    setEntries(nextEntries);
+    const nextDay = await loadWorkoutDay(supabase, userId, date);
+    setDay(nextDay);
   }, [date, userId]);
 
   const reloadCatalog = useCallback(async () => {
@@ -147,16 +152,15 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
     setId: string,
     fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
   ) {
-    setEntries((current) => applySetFields(current, setId, fields));
+    setDay((current) => applySetFieldsToDay(current, setId, fields));
   }
 
   async function onReorderEntry(entryId: string, position: number) {
-    setEntries((current) => moveEntryToPosition(current, entryId, position));
+    setDay((current) => moveEntryInDay(current, entryId, position));
     await run(() => reorderDayEntry(supabase, entryId, position));
   }
 
-  const listed = orderedEntries(entries);
-  const setSummary = sessionSetSummary(entries);
+  const daySummary = daySetSummary(day);
 
   return (
     <View style={styles.screen}>
@@ -198,62 +202,75 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
 
         {loading ? <ActivityIndicator color={COLORS.sageDark} style={{ marginTop: 24 }} /> : null}
 
-        {!loading && entries.length === 0 ? (
+        {!loading && day.sessions.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.muted}>Todavía no hay ejercicios en este día.</Text>
+            <Text style={styles.muted}>Todavía no hay sesiones en este día.</Text>
           </View>
         ) : null}
 
-        {!loading && entries.length > 0 ? (
-          <View>
+        {!loading && day.sessions.length > 0 ? (
+          <View style={{ marginBottom: 8 }}>
             <Text style={styles.summaryTotal}>
-              Volumen sistemático del día: {setSummary.total}
+              Volumen sistemático del día: {daySummary.total}
             </Text>
             <Text style={styles.muted}>
-              {setSummary.byMuscle.map((group) => `${group.label} ${group.sets}`).join(" · ")}
+              {daySummary.byMuscle.map((group) => `${group.label} ${group.sets}`).join(" · ")}
             </Text>
           </View>
         ) : null}
 
-        {listed.map((entry, index) => (
-          <ExerciseCard
-            key={entry.id}
-            number={index + 1}
-            entry={entry}
-            onRun={run}
-            onSetFieldsChange={onSetFieldsChange}
-            onReorderEntry={onReorderEntry}
-          />
-        ))}
+        {!loading
+          ? day.sessions.map((session) => (
+              <SessionBlock
+                key={session.id}
+                session={session}
+                onRun={run}
+                onSetFieldsChange={onSetFieldsChange}
+                onReorderEntry={onReorderEntry}
+                onAddExercise={() => setPickerSessionId(session.id)}
+              />
+            ))
+          : null}
 
-        <Pressable style={styles.primary} onPress={() => setPickerOpen(true)}>
-          <Text style={styles.primaryText}>Agregar ejercicio</Text>
+        <Pressable
+          style={styles.outline}
+          onPress={() => run(() => createWorkoutSession(supabase, userId, date))}
+        >
+          <Text style={styles.outlineText}>+ Agregar sesión</Text>
         </Pressable>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
-      <AddExerciseModal
-        visible={pickerOpen}
-        catalog={catalog}
-        usedIds={new Set(entries.map((entry) => entry.exerciseId))}
-        onClose={() => setPickerOpen(false)}
-        onPick={(exerciseId) =>
-          run(async () => {
-            await addExerciseToDay(supabase, userId, date, exerciseId);
-            setPickerOpen(false);
-          })
-        }
-        onCreate={(name, muscleGroups) =>
-          run(
-            async () => {
-              await createAndAddExercise(supabase, userId, date, name, muscleGroups);
-              setPickerOpen(false);
-            },
-            { refreshCatalog: true },
-          )
-        }
-      />
+      {pickerSessionId ? (
+        <AddExerciseModal
+          visible
+          catalog={catalog}
+          usedIds={
+            new Set(
+              day.sessions
+                .find((session) => session.id === pickerSessionId)
+                ?.entries.map((entry) => entry.exerciseId) ?? [],
+            )
+          }
+          onClose={() => setPickerSessionId(null)}
+          onPick={(exerciseId) =>
+            run(async () => {
+              await addExerciseToSession(supabase, pickerSessionId, exerciseId);
+              setPickerSessionId(null);
+            })
+          }
+          onCreate={(name, muscleGroups) =>
+            run(
+              async () => {
+                await createAndAddExercise(supabase, userId, pickerSessionId, name, muscleGroups);
+                setPickerSessionId(null);
+              },
+              { refreshCatalog: true },
+            )
+          }
+        />
+      ) : null}
     </View>
   );
 }
@@ -262,6 +279,62 @@ type RunFn = (
   action: () => Promise<void>,
   options?: { refreshCatalog?: boolean; refreshDay?: boolean },
 ) => Promise<void>;
+
+function SessionBlock({
+  session,
+  onRun,
+  onSetFieldsChange,
+  onReorderEntry,
+  onAddExercise,
+}: {
+  session: WorkoutSessionView;
+  onRun: RunFn;
+  onSetFieldsChange: (
+    setId: string,
+    fields: { weightKg?: number | null; reps?: number | null; rir?: number | null },
+  ) => void;
+  onReorderEntry: (entryId: string, position: number) => Promise<void>;
+  onAddExercise: () => void;
+}) {
+  const listed = orderedEntries(session.entries);
+  const sessionSummary = sessionSetSummary(session.entries);
+
+  return (
+    <View style={styles.sessionCard}>
+      <View style={styles.sessionHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>{defaultSessionLabel(session.sessionNumber)}</Text>
+          <Text style={styles.summaryTotal}>
+            Volumen de la sesión: {sessionSummary.total}
+          </Text>
+          <Text style={styles.muted}>
+            {sessionSummary.byMuscle.map((group) => `${group.label} ${group.sets}`).join(" · ")}
+          </Text>
+        </View>
+        <Pressable style={styles.sessionAddBtn} onPress={onAddExercise}>
+          <Text style={styles.sessionAddText}>Agregar ejercicio</Text>
+        </Pressable>
+      </View>
+
+      {listed.length === 0 ? (
+        <Text style={[styles.muted, { textAlign: "center", paddingVertical: 16 }]}>
+          Sin ejercicios en esta sesión.
+        </Text>
+      ) : (
+        listed.map((entry, index) => (
+          <ExerciseCard
+            key={entry.id}
+            number={index + 1}
+            entry={entry}
+            onRun={onRun}
+            onSetFieldsChange={onSetFieldsChange}
+            onReorderEntry={onReorderEntry}
+          />
+        ))
+      )}
+    </View>
+  );
+}
 
 function MuscleBadges({
   item,
@@ -599,7 +672,21 @@ const styles = StyleSheet.create({
   },
   dateBtnText: { fontSize: 22, color: COLORS.ink },
   empty: { paddingVertical: 48, alignItems: "center" },
-  group: { gap: 16 },
+  sessionCard: {
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+  },
+  sessionHeader: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  sessionAddBtn: {
+    backgroundColor: COLORS.sageDark,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  sessionAddText: { color: "#fff", fontWeight: "600", fontSize: 13 },
   groupTitle: { fontSize: 13, fontWeight: "500", color: COLORS.muted, marginBottom: 2 },
   card: { gap: 0 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
@@ -649,7 +736,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.sand,
     marginRight: 6,
   },
-  kindChipActive: { backgroundColor: COLORS.sageDark },
   kindText: { fontSize: 12, color: COLORS.ink },
   kindTextActive: { color: "#fff", fontWeight: "600" },
   link: { color: COLORS.sageDark, fontWeight: "600", textAlign: "center", paddingVertical: 10, fontSize: 14 },

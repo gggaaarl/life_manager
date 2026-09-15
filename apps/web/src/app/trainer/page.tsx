@@ -22,7 +22,7 @@ export default async function TrainerPage({ searchParams }: PageProps) {
     redirect("/login");
   }
 
-  const [catalog, entries] = await Promise.all([
+  const [catalog, day] = await Promise.all([
     listCatalogExercises(supabase),
     loadWorkoutDay(supabase, user.id, workDate),
   ]);
@@ -35,7 +35,7 @@ export default async function TrainerPage({ searchParams }: PageProps) {
           userId={user.id}
           initialDate={workDate}
           initialCatalog={catalog}
-          initialEntries={entries}
+          initialDay={day}
         />
       </div>
     </main>
