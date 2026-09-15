@@ -7,16 +7,16 @@ alwaysApply: true
 
 Guisela pide cambios puntuales. El agente no “mejora” layout, menú ni pantallas de paso.
 
-## Enfoque actual (2026-09-11)
+## Enfoque actual (2026-09-15)
 
-La app visible es **solo registro del día de ejercicios**.
+La app es **solo registro del día de ejercicios**.
 
 - Entrada: `/trainer` (también `/` y post-login).
 - Header: logo + hamburguesa (correo y datos de Google, Registrar ejercicio, Cerrar sesión).
 - App: barra lateral con una sola opción, Registrar ejercicio.
-- Sin Finanzas, sin Mis trabajos, sin roles, sin hub.
-- Finanzas, salidas, taxi, nutrición, developer y home **existen en código** pero no se muestran. `/finance`, `/player`, `/driver`, `/home`, `/nutrition`, `/developer` redirigen a `/trainer`.
-- No reactivar esos menús ni jobs/roles salvo que Guisela lo pida explícito.
+- Sin Finanzas, sin Mis trabajos, sin roles, sin hub, sin wallets.
+- El código de finanzas, citas, taxi, nutrición y jobs **ya no está**. No reintroducirlo salvo pedido explícito.
+- Rutas viejas (`/finance`, `/player`, `/driver`, `/home`, `/nutrition`, `/developer`) redirigen a `/trainer`.
 
 ## No tocar si no lo pidió
 
