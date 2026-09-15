@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -18,6 +19,7 @@ import {
   createWorkoutSession,
   deleteEntry,
   deleteSetRow,
+  deleteWorkoutSession,
   listCatalogExercises,
   loadWorkoutDay,
   reorderDayEntry,
@@ -228,6 +230,26 @@ export function WorkoutScreen({ userId, account, onSignOut, signingOut }: Props)
                 onSetFieldsChange={onSetFieldsChange}
                 onReorderEntry={onReorderEntry}
                 onAddExercise={() => setPickerSessionId(session.id)}
+                onDelete={() => {
+                  const exerciseCount = session.entries.length;
+                  Alert.alert(
+                    `Eliminar ${defaultSessionLabel(session.sessionNumber)}?`,
+                    exerciseCount === 0
+                      ? "Se borrarán todos los datos de esta sesión. Esta acción no se puede deshacer."
+                      : `Se borrarán ${exerciseCount} ejercicio${exerciseCount === 1 ? "" : "s"} y sus sets. Esta acción no se puede deshacer.`,
+                    [
+                      { text: "Cancelar", style: "cancel" },
+                      {
+                        text: "Eliminar sesión",
+                        style: "destructive",
+                        onPress: () => {
+                          if (pickerSessionId === session.id) setPickerSessionId(null);
+                          void run(() => deleteWorkoutSession(supabase, session.id));
+                        },
+                      },
+                    ],
+                  );
+                }}
               />
             ))
           : null}
@@ -286,6 +308,7 @@ function SessionBlock({
   onSetFieldsChange,
   onReorderEntry,
   onAddExercise,
+  onDelete,
 }: {
   session: WorkoutSessionView;
   onRun: RunFn;
@@ -295,6 +318,7 @@ function SessionBlock({
   ) => void;
   onReorderEntry: (entryId: string, position: number) => Promise<void>;
   onAddExercise: () => void;
+  onDelete: () => void;
 }) {
   const listed = orderedEntries(session.entries);
   const sessionSummary = sessionSetSummary(session.entries);
@@ -311,9 +335,14 @@ function SessionBlock({
             {sessionSummary.byMuscle.map((group) => `${group.label} ${group.sets}`).join(" · ")}
           </Text>
         </View>
-        <Pressable style={styles.sessionAddBtn} onPress={onAddExercise}>
-          <Text style={styles.sessionAddText}>Agregar ejercicio</Text>
-        </Pressable>
+        <View style={styles.sessionActions}>
+          <Pressable onPress={onDelete}>
+            <Text style={styles.sessionDeleteText}>Eliminar sesión</Text>
+          </Pressable>
+          <Pressable style={styles.sessionAddBtn} onPress={onAddExercise}>
+            <Text style={styles.sessionAddText}>Agregar ejercicio</Text>
+          </Pressable>
+        </View>
       </View>
 
       {listed.length === 0 ? (
@@ -680,6 +709,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sessionHeader: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  sessionActions: { alignItems: "flex-end", gap: 8 },
+  sessionDeleteText: { fontSize: 13, color: COLORS.danger, fontWeight: "500" },
   sessionAddBtn: {
     backgroundColor: COLORS.sageDark,
     borderRadius: 999,

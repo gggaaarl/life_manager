@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { signInWithEmail, signInWithGoogle } from "../lib/auth";
+import { signInWithEmail, signInWithGoogle, signUpWithEmail } from "../lib/auth";
 
 const COLORS = {
   sand: "#f7f7f8",
@@ -16,9 +16,10 @@ const COLORS = {
   line: "#ececee",
   panel: "#ffffff",
   teal: "#5b4dff",
-  mint: "#6d5ef5",
   danger: "#e11d48",
 };
+
+type Mode = "signin" | "signup";
 
 type Props = {
   busy: boolean;
@@ -28,17 +29,39 @@ type Props = {
 };
 
 export function LoginScreen({ busy, error, onBusy, onError }: Props) {
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
 
   async function handleEmail() {
     onError(null);
+    setInfo(null);
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      onError("Escribe email y contraseña.");
+      return;
+    }
+    if (password.length < 6) {
+      onError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
     setLoading("email");
     onBusy(true);
     try {
-      await signInWithEmail(email.trim(), password);
+      if (mode === "signup") {
+        const result = await signUpWithEmail(trimmedEmail, password);
+        if (result === "confirm") {
+          setInfo("Te enviamos un correo de confirmación. Ábrelo y luego inicia sesión.");
+          setMode("signin");
+          setPassword("");
+        }
+        return;
+      }
+      await signInWithEmail(trimmedEmail, password);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Error al iniciar sesión.");
     } finally {
@@ -49,6 +72,7 @@ export function LoginScreen({ busy, error, onBusy, onError }: Props) {
 
   async function handleGoogle() {
     onError(null);
+    setInfo(null);
     setLoading("google");
     onBusy(true);
     try {
@@ -74,7 +98,7 @@ export function LoginScreen({ busy, error, onBusy, onError }: Props) {
           <Text style={styles.brandLine2}>CRUEL</Text>
         </View>
 
-        <Text style={styles.title}>Inicio de sesión</Text>
+        <Text style={styles.title}>{mode === "signup" ? "Crear cuenta" : "Inicio de sesión"}</Text>
 
         <TextInput
           value={email}
@@ -95,7 +119,7 @@ export function LoginScreen({ busy, error, onBusy, onError }: Props) {
             placeholder="Contraseña"
             placeholderTextColor={COLORS.muted}
             secureTextEntry={!showPassword}
-            textContentType="password"
+            textContentType={mode === "signup" ? "newPassword" : "password"}
             style={[styles.input, styles.passwordInput]}
           />
           <Pressable
@@ -107,6 +131,11 @@ export function LoginScreen({ busy, error, onBusy, onError }: Props) {
           </Pressable>
         </View>
 
+        {mode === "signup" ? (
+          <Text style={styles.hint}>Mínimo 6 caracteres. Te llegará un correo para confirmar.</Text>
+        ) : null}
+
+        {info ? <Text style={styles.info}>{info}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Pressable
@@ -115,7 +144,26 @@ export function LoginScreen({ busy, error, onBusy, onError }: Props) {
           disabled={disabled}
         >
           <Text style={styles.primaryText}>
-            {loading === "email" ? "Entrando…" : "Inicia sesión"}
+            {loading === "email"
+              ? mode === "signup"
+                ? "Creando…"
+                : "Entrando…"
+              : mode === "signup"
+                ? "Crear cuenta"
+                : "Inicia sesión"}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => {
+            setMode((current) => (current === "signup" ? "signin" : "signup"));
+            onError(null);
+            setInfo(null);
+          }}
+          disabled={disabled}
+        >
+          <Text style={styles.switchMode}>
+            {mode === "signup" ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Crear cuenta"}
           </Text>
         </Pressable>
 
@@ -230,6 +278,22 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontWeight: "500",
   },
+  hint: {
+    fontSize: 13,
+    color: COLORS.muted,
+    marginBottom: 12,
+  },
+  info: {
+    borderWidth: 1,
+    borderColor: "rgba(91,77,255,0.25)",
+    backgroundColor: "rgba(91,77,255,0.08)",
+    color: COLORS.teal,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginBottom: 12,
+  },
   error: {
     borderWidth: 1,
     borderColor: "#fecdd3",
@@ -253,6 +317,13 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "600",
+  },
+  switchMode: {
+    marginTop: 16,
+    textAlign: "center",
+    fontSize: 14,
+    color: COLORS.teal,
+    fontWeight: "500",
   },
   dividerRow: {
     flexDirection: "row",

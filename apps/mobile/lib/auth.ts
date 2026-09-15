@@ -41,11 +41,44 @@ async function createSessionFromUrl(url: string) {
   throw new Error("Google no devolvió una sesión. Recarga Expo Go e inténtalo de nuevo.");
 }
 
+function authRedirectUrl(): string {
+  const site = process.env.EXPO_PUBLIC_SITE_URL ?? "https://life-manager-tau.vercel.app";
+  return `${site.replace(/\/$/, "")}/auth/callback?app=mobile`;
+}
+
+export function mapAuthError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("email not confirmed")) {
+    return "Confirma tu correo antes de iniciar sesión (revisa tu bandeja).";
+  }
+  if (lower.includes("invalid login credentials")) {
+    return "Email o contraseña incorrectos.";
+  }
+  if (lower.includes("user already registered")) {
+    return "Ese correo ya está registrado. Inicia sesión.";
+  }
+  return message;
+}
+
 export async function signInWithEmail(email: string, password: string) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    throw error;
+    throw new Error(mapAuthError(error.message));
   }
+}
+
+export async function signUpWithEmail(email: string, password: string): Promise<"session" | "confirm"> {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: authRedirectUrl(),
+    },
+  });
+  if (error) {
+    throw new Error(mapAuthError(error.message));
+  }
+  return data.session ? "session" : "confirm";
 }
 
 export async function signInWithGoogle() {

@@ -1,7 +1,7 @@
 import { LoginForm } from "@/components/auth/login-form";
 
 type Props = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: Props) {
@@ -12,6 +12,10 @@ export default async function LoginPage({ searchParams }: Props) {
       : params.error === "config"
         ? "Faltan variables de Supabase en Vercel. Revisa NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY."
         : undefined;
+  const infoMessage =
+    params.message === "confirmed"
+      ? "Correo confirmado. Ya puedes iniciar sesión."
+      : undefined;
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-sand text-ink">
@@ -29,7 +33,7 @@ export default async function LoginPage({ searchParams }: Props) {
         </section>
 
         <section className="flex flex-col justify-center px-6 pb-10 sm:px-10 lg:px-12 lg:py-12">
-          <LoginForm errorMessage={errorMessage} />
+          <LoginForm errorMessage={errorMessage} infoMessage={infoMessage} />
         </section>
       </div>
     </main>

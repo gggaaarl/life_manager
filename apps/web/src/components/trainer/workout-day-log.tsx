@@ -11,6 +11,7 @@ import {
   createWorkoutSession,
   deleteEntry,
   deleteSetRow,
+  deleteWorkoutSession,
   updateSetFields,
 } from "@life-manager/shared/workout/api";
 import {
@@ -115,6 +116,7 @@ export function WorkoutDayLog({
   const [, startTransition] = useTransition();
   const supabase = useMemo(() => createClient(), []);
   const [pickerSessionId, setPickerSessionId] = useState<string | null>(null);
+  const [pendingDeleteSession, setPendingDeleteSession] = useState<WorkoutSessionView | null>(null);
   const daySummary = daySetSummary(day);
   const hasSessions = day.sessions.length > 0;
 
@@ -139,6 +141,7 @@ export function WorkoutDayLog({
             onSetFieldsChange={onSetFieldsChange}
             onReorderEntry={onReorderEntry}
             onAddExercise={() => setPickerSessionId(session.id)}
+            onDelete={() => setPendingDeleteSession(session)}
           />
         ))}
       </div>
@@ -157,6 +160,22 @@ export function WorkoutDayLog({
           + Agregar sesión
         </button>
       </div>
+
+      {pendingDeleteSession ? (
+        <ConfirmDeleteSessionModal
+          session={pendingDeleteSession}
+          onCancel={() => setPendingDeleteSession(null)}
+          onConfirm={() => {
+            const sessionId = pendingDeleteSession.id;
+            setPendingDeleteSession(null);
+            if (pickerSessionId === sessionId) setPickerSessionId(null);
+            startTransition(async () => {
+              await deleteWorkoutSession(supabase, sessionId);
+              await onRefreshDay();
+            });
+          }}
+        />
+      ) : null}
 
       {pickerSessionId ? (
         <AddExercisePicker
@@ -179,18 +198,70 @@ export function WorkoutDayLog({
   );
 }
 
+function ConfirmDeleteSessionModal({
+  session,
+  onCancel,
+  onConfirm,
+}: {
+  session: WorkoutSessionView;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const exerciseCount = session.entries.length;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 p-4 sm:items-center">
+      <div
+        className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-session-title"
+      >
+        <h2 id="delete-session-title" className="text-[17px] font-semibold tracking-tight text-ink">
+          Eliminar {defaultSessionLabel(session.sessionNumber)}?
+        </h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-muted">
+          Se borrarán{" "}
+          {exerciseCount === 0
+            ? "todos los datos de esta sesión"
+            : `${exerciseCount} ejercicio${exerciseCount === 1 ? "" : "s"} y sus sets`}
+          . Esta acción no se puede deshacer.
+        </p>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-11 rounded-xl border border-line px-4 text-[15px] font-medium text-ink"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-11 rounded-xl bg-[var(--lm-danger,#e11d48)] px-4 text-[15px] font-semibold text-white"
+          >
+            Eliminar sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WorkoutSessionBlock({
   session,
   onRefreshDay,
   onSetFieldsChange,
   onReorderEntry,
   onAddExercise,
+  onDelete,
 }: {
   session: WorkoutSessionView;
   onRefreshDay: () => Promise<unknown>;
   onSetFieldsChange: Props["onSetFieldsChange"];
   onReorderEntry: Props["onReorderEntry"];
   onAddExercise: () => void;
+  onDelete: () => void;
 }) {
   const listed = orderedEntries(session.entries);
   const sessionSummary = sessionSetSummary(session.entries);
@@ -204,13 +275,22 @@ function WorkoutSessionBlock({
           </h2>
           <SummaryBlock title="Volumen de la sesión" summary={sessionSummary} />
         </div>
-        <button
-          type="button"
-          onClick={onAddExercise}
-          className="rounded-full bg-teal px-4 py-2 text-[14px] font-semibold text-white"
-        >
-          Agregar ejercicio
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="rounded-full border border-line px-4 py-2 text-[14px] font-medium text-muted hover:text-[var(--lm-danger,#e11d48)]"
+          >
+            Eliminar sesión
+          </button>
+          <button
+            type="button"
+            onClick={onAddExercise}
+            className="rounded-full bg-teal px-4 py-2 text-[14px] font-semibold text-white"
+          >
+            Agregar ejercicio
+          </button>
+        </div>
       </div>
 
       {listed.length === 0 ? (

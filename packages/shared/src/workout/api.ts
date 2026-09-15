@@ -522,6 +522,11 @@ export async function reorderDayEntry(
   );
 }
 
+export async function deleteWorkoutSession(supabase: unknown, sessionId: string): Promise<void> {
+  const removed = await db(supabase).from("workout_sessions").delete().eq("id", sessionId);
+  if (removed.error) fail(removed.error, "No se pudo eliminar la sesión.");
+}
+
 export async function deleteEntry(supabase: unknown, entryId: string): Promise<void> {
   const current = await db(supabase)
     .from("workout_entries")

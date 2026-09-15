@@ -5,17 +5,23 @@ import { FormEvent, useState } from "react";
 
 type Props = {
   errorMessage?: string;
+  infoMessage?: string;
 };
 
-export function LoginForm({ errorMessage }: Props) {
+type Mode = "signin" | "signup";
+
+export function LoginForm({ errorMessage, infoMessage }: Props) {
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [localInfo, setLocalInfo] = useState<string | null>(null);
 
   async function signInWithGoogle() {
     setLocalError(null);
+    setLocalInfo(null);
     setLoading("google");
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
@@ -30,32 +36,69 @@ export function LoginForm({ errorMessage }: Props) {
     }
   }
 
-  async function signInWithEmail(e: FormEvent) {
+  async function submitEmail(e: FormEvent) {
     e.preventDefault();
     setLocalError(null);
+    setLocalInfo(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setLocalError("Escribe email y contraseña.");
+      return;
+    }
+    if (password.length < 6) {
+      setLocalError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
     setLoading("email");
     const supabase = createClient();
+
+    if (mode === "signup") {
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/trainer`,
+        },
+      });
+      setLoading(null);
+      if (error) {
+        setLocalError(mapAuthError(error.message));
+        return;
+      }
+      if (data.session) {
+        window.location.href = "/trainer";
+        return;
+      }
+      setLocalInfo("Te enviamos un correo de confirmación. Ábrelo y luego inicia sesión.");
+      setMode("signin");
+      setPassword("");
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: trimmedEmail,
       password,
     });
+    setLoading(null);
     if (error) {
-      setLocalError(error.message);
-      setLoading(null);
+      setLocalError(mapAuthError(error.message));
       return;
     }
     window.location.href = "/trainer";
   }
 
   const error = localError ?? errorMessage;
+  const info = localInfo ?? infoMessage;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col">
       <h2 className="text-[22px] font-semibold tracking-tight text-ink sm:text-2xl">
-        Inicio de sesión
+        {mode === "signup" ? "Crear cuenta" : "Inicio de sesión"}
       </h2>
 
-      <form onSubmit={signInWithEmail} className="mt-6 flex flex-col gap-3">
+      <form onSubmit={submitEmail} className="mt-6 flex flex-col gap-3">
         <label className="sr-only" htmlFor="email">
           Dirección de email
         </label>
@@ -76,7 +119,7 @@ export function LoginForm({ errorMessage }: Props) {
           <input
             id="password"
             type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
+            autoComplete={mode === "signup" ? "new-password" : "current-password"}
             placeholder="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -92,6 +135,14 @@ export function LoginForm({ errorMessage }: Props) {
           </button>
         </div>
 
+        {mode === "signup" ? (
+          <p className="text-[13px] text-muted">Mínimo 6 caracteres. Te llegará un correo para confirmar la cuenta.</p>
+        ) : null}
+
+        {info ? (
+          <p className="rounded-xl border border-teal/20 bg-teal/5 px-3 py-2 text-sm text-teal">{info}</p>
+        ) : null}
+
         {error ? (
           <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-[var(--lm-danger)]">
             {error}
@@ -103,9 +154,49 @@ export function LoginForm({ errorMessage }: Props) {
           disabled={loading !== null}
           className="mt-1 h-12 w-full rounded-xl bg-teal text-[15px] font-semibold text-white transition hover:bg-teal/90 disabled:opacity-60"
         >
-          {loading === "email" ? "Entrando…" : "Inicia sesión"}
+          {loading === "email"
+            ? mode === "signup"
+              ? "Creando…"
+              : "Entrando…"
+            : mode === "signup"
+              ? "Crear cuenta"
+              : "Inicia sesión"}
         </button>
       </form>
+
+      <p className="mt-4 text-center text-[14px] text-muted">
+        {mode === "signup" ? (
+          <>
+            ¿Ya tienes cuenta?{" "}
+            <button
+              type="button"
+              className="font-medium text-teal hover:underline"
+              onClick={() => {
+                setMode("signin");
+                setLocalError(null);
+                setLocalInfo(null);
+              }}
+            >
+              Inicia sesión
+            </button>
+          </>
+        ) : (
+          <>
+            ¿No tienes cuenta?{" "}
+            <button
+              type="button"
+              className="font-medium text-teal hover:underline"
+              onClick={() => {
+                setMode("signup");
+                setLocalError(null);
+                setLocalInfo(null);
+              }}
+            >
+              Crear cuenta
+            </button>
+          </>
+        )}
+      </p>
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-line" />
@@ -124,6 +215,20 @@ export function LoginForm({ errorMessage }: Props) {
       </button>
     </div>
   );
+}
+
+function mapAuthError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("email not confirmed")) {
+    return "Confirma tu correo antes de iniciar sesión (revisa tu bandeja).";
+  }
+  if (lower.includes("invalid login credentials")) {
+    return "Email o contraseña incorrectos.";
+  }
+  if (lower.includes("user already registered")) {
+    return "Ese correo ya está registrado. Inicia sesión.";
+  }
+  return message;
 }
 
 function EyeIcon() {
